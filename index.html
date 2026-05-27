@@ -182,7 +182,9 @@ const DEFAULT_CARDS = [
   { fr: "le musée", pronunciation: "leh myoo-ZAY", en: "the museum", topic: "City & Transport" },
 ];
 
-const TOPIC_COLORS = {
+const PROTECTED_TOPICS = ["Everyday", "Months & Days", "Numbers", "Classroom", "Adjectives", "Verbs", "Family & Home", "City & Transport"];
+
+
   "All":"#2a85e8","Everyday":"#e85a2a","Months & Days":"#2aae6e",
   "Numbers":"#9b2ae8","Classroom":"#e8a82a","Adjectives":"#e82a7a",
   "Verbs":"#2ab8e8","Family & Home":"#e86a2a","City & Transport":"#5a8ae8","My Words":"#16a085",
@@ -274,8 +276,47 @@ function App() {
     } catch(e) { setSheetStatus("error"); setSheetError(e.message); }
   };
 
-  const topics = ["All", ...new Set(allCards.map(c => c.topic))];
-  const color = TOPIC_COLORS[topic] || "#2a85e8";
+  const [showTopicManager, setShowTopicManager] = useState(false);
+  const [newTopicName, setNewTopicName] = useState("");
+  const [editingTopic, setEditingTopic] = useState(null);
+  const [editingName, setEditingName] = useState("");
+  const [customTopics, setCustomTopics] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("fr-custom-topics") || "[]"); } catch(e) { return []; }
+  });
+
+  const saveCustomTopics = (topics) => {
+    setCustomTopics(topics);
+    localStorage.setItem("fr-custom-topics", JSON.stringify(topics));
+  };
+
+  const addTopic = () => {
+    const name = newTopicName.trim();
+    if (!name || customTopics.includes(name) || PROTECTED_TOPICS.includes(name)) return;
+    saveCustomTopics([...customTopics, name]);
+    setNewTopicName("");
+  };
+
+  const renameTopic = (oldName, newName) => {
+    const trimmed = newName.trim();
+    if (!trimmed || trimmed === oldName) { setEditingTopic(null); return; }
+    // Rename in cards
+    setAllCards(cards => cards.map(c => c.topic === oldName ? {...c, topic: trimmed} : c));
+    // Rename in custom topics
+    saveCustomTopics(customTopics.map(t => t === oldName ? trimmed : t));
+    // Update selected topic if needed
+    if (topic === oldName) setTopic(trimmed);
+    setEditingTopic(null);
+  };
+
+  const deleteTopic = (name) => {
+    if (!confirm(`Delete topic "${name}"? Cards will move to "My Words".`)) return;
+    setAllCards(cards => cards.map(c => c.topic === name ? {...c, topic: "My Words"} : c));
+    saveCustomTopics(customTopics.filter(t => t !== name));
+    if (topic === name) { setTopic("All"); }
+  };
+
+  const allTopics = ["All", ...PROTECTED_TOPICS, ...customTopics.filter(t => !PROTECTED_TOPICS.includes(t))];
+
   const card = deck[idx];
   const progress = Math.round(((known.size + review.size) / deck.length) * 100);
   const isKnown = known.has(card.fr);
@@ -338,8 +379,68 @@ function App() {
       sheetStatus==="error" && React.createElement("div",{className:"sheet-error"},"⚠️ "+sheetError),
     ),
 
-    // Topics
-    React.createElement("div", { className:"topic-label" }, "topic"),
+    // Topics header row
+    React.createElement("div", { style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6} },
+      React.createElement("div", { className:"topic-label" }, "topic"),
+      React.createElement("button", {
+        onClick: () => setShowTopicManager(p => !p),
+        style:{ fontSize:12, padding:"3px 10px", borderRadius:999, cursor:"pointer", border:"0.5px solid #ddd", background: showTopicManager ? color : "#fff", color: showTopicManager ? "#fff" : "#666" }
+      }, "⚙️ Manage Topics")
+    ),
+
+    // Topic Manager Panel
+    showTopicManager && React.createElement("div", { style:{background:"#f7f7f7",border:"0.5px solid #ddd",borderRadius:16,padding:"1rem",marginBottom:"0.75rem"} },
+      React.createElement("div", { style:{fontSize:13,fontWeight:500,marginBottom:10} }, "⚙️ Manage Topics"),
+
+      // Topic list
+      [...PROTECTED_TOPICS, ...customTopics.filter(t => !PROTECTED_TOPICS.includes(t))].map(t =>
+        React.createElement("div", { key:t, style:{display:"flex",alignItems:"center",gap:6,marginBottom:6} },
+          editingTopic === t
+            ? React.createElement(React.Fragment, null,
+                React.createElement("input", {
+                  value: editingName,
+                  onChange: e => setEditingName(e.target.value),
+                  onKeyDown: e => e.key === "Enter" && renameTopic(t, editingName),
+                  style:{ flex:1, fontSize:12, padding:"4px 8px", borderRadius:8, border:"0.5px solid #ddd", outline:"none" },
+                  autoFocus: true,
+                }),
+                React.createElement("button", { onClick:()=>renameTopic(t, editingName), style:{fontSize:12,padding:"4px 10px",borderRadius:8,border:"none",background:color,color:"#fff",cursor:"pointer"} }, "✓"),
+                React.createElement("button", { onClick:()=>setEditingTopic(null), style:{fontSize:12,padding:"4px 10px",borderRadius:8,border:"0.5px solid #ddd",background:"#fff",color:"#666",cursor:"pointer"} }, "✕"),
+              )
+            : React.createElement(React.Fragment, null,
+                React.createElement("span", { style:{flex:1,fontSize:13,padding:"4px 8px",borderRadius:8,background:"#fff",border:"0.5px solid #eee"} },
+                  PROTECTED_TOPICS.includes(t)
+                    ? React.createElement(React.Fragment, null, t, " ", React.createElement("span",{style:{fontSize:10,color:"#aaa"}},"🔒"))
+                    : t
+                ),
+                !PROTECTED_TOPICS.includes(t) && React.createElement("button", {
+                  onClick:()=>{ setEditingTopic(t); setEditingName(t); },
+                  style:{fontSize:13,padding:"4px 8px",borderRadius:8,border:"0.5px solid #ddd",background:"#fff",color:"#666",cursor:"pointer"}
+                }, "✏️"),
+                !PROTECTED_TOPICS.includes(t) && React.createElement("button", {
+                  onClick:()=>deleteTopic(t),
+                  style:{fontSize:13,padding:"4px 8px",borderRadius:8,border:"0.5px solid #ddd",background:"#fff",color:"#e85a2a",cursor:"pointer"}
+                }, "🗑️"),
+              )
+        )
+      ),
+
+      // Add new topic
+      React.createElement("div", { style:{display:"flex",gap:8,marginTop:10} },
+        React.createElement("input", {
+          value: newTopicName,
+          onChange: e => setNewTopicName(e.target.value),
+          onKeyDown: e => e.key === "Enter" && addTopic(),
+          placeholder: "New topic name...",
+          style:{ flex:1, fontSize:12, padding:"6px 10px", borderRadius:8, border:"0.5px solid #ddd", outline:"none" }
+        }),
+        React.createElement("button", {
+          onClick: addTopic,
+          disabled: !newTopicName.trim(),
+          style:{ fontSize:12, padding:"6px 14px", borderRadius:8, border:"none", background:color, color:"#fff", cursor:"pointer", opacity: newTopicName.trim() ? 1 : 0.5 }
+        }, "➕ Add")
+      )
+    ),
     React.createElement("div", { className:"topic-row" },
       topics.map(t => React.createElement("button", {
         key:t, className:"topic-btn"+(topic===t?" active":""),
