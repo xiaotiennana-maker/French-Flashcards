@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>French Flashcards</title>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#2a85e8" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="French Cards" />
+  <link rel="apple-touch-icon" href="icon.png" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #fff; color: #111; }
+    #root { max-width: 520px; margin: 0 auto; padding: 1rem; }
+
+    .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 6px; }
+    .overall { font-size: 12px; color: #666; }
+    .btn-row { display: flex; gap: 6px; }
+
+    .btn { cursor: pointer; border: none; border-radius: 999px; padding: 5px 14px; font-size: 12px; font-weight: 500; }
+    .btn-save { background: #2a85e8; color: #fff; }
+    .btn-reset { background: #fff; border: 0.5px solid #ddd; color: #666; }
+    .btn-sheet { background: #fff; border: 0.5px solid #ddd; color: #666; }
+    .btn-sheet.connected { background: #16a08522; color: #16a085; border-color: #16a085; }
+
+    .sheet-panel { background: #f7f7f7; border: 0.5px solid #ddd; border-radius: 16px; padding: 1rem; margin-bottom: 1rem; }
+    .sheet-panel h3 { font-size: 13px; margin-bottom: 6px; }
+    .sheet-panel p { font-size: 12px; color: #666; line-height: 1.6; margin-bottom: 10px; }
+    .sheet-input-row { display: flex; gap: 8px; }
+    .sheet-input { flex: 1; font-size: 12px; padding: 6px 10px; border-radius: 8px; border: 0.5px solid #ddd; outline: none; }
+    .btn-load { font-size: 12px; padding: 6px 14px; border-radius: 8px; border: none; background: #2a85e8; color: #fff; cursor: pointer; font-weight: 500; }
+    .btn-load:disabled { opacity: 0.5; cursor: not-allowed; }
+    .sheet-success { margin-top: 8px; font-size: 12px; color: #16a085; }
+    .sheet-error { margin-top: 8px; font-size: 12px; color: #e85a2a; }
+
+    .topic-label { font-size: 12px; color: #666; margin-bottom: 6px; }
+    .topic-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 0.75rem; }
+    .topic-btn { padding: 5px 12px; border-radius: 999px; font-size: 12px; cursor: pointer; border: 0.5px solid #ddd; background: #fff; color: #666; font-weight: 400; }
+    .topic-btn.active { border: none; color: #fff; font-weight: 500; }
+
+    .skip-row { display: flex; align-items: center; gap: 8px; margin-bottom: 0.75rem; cursor: pointer; }
+    .toggle { width: 40px; height: 22px; border-radius: 999px; background: #e5e5e5; position: relative; transition: background 0.2s; flex-shrink: 0; }
+    .toggle.on { background: #2a85e8; }
+    .toggle-knob { width: 16px; height: 16px; border-radius: 50%; background: #fff; position: absolute; top: 3px; left: 3px; transition: left 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+    .toggle.on .toggle-knob { left: 21px; }
+    .skip-label { font-size: 13px; color: #666; }
+    .skip-count { color: #2a85e8; font-weight: 500; margin-left: 6px; }
+
+    .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+    .card-counter { font-size: 13px; color: #666; }
+    .badge-row { display: flex; gap: 8px; }
+    .badge { font-size: 12px; padding: 3px 10px; border-radius: 20px; }
+    .badge-known { background: #e6f9f0; color: #2aae6e; }
+    .badge-review { background: #fff8e1; color: #e8a82a; }
+
+    .progress-bar { height: 4px; border-radius: 999px; background: #f0f0f0; margin-bottom: 0.75rem; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 999px; transition: width 0.3s; }
+
+    .card { border-radius: 20px; box-shadow: 0 4px 24px rgba(0,0,0,0.07); padding: 2rem 1.5rem; min-height: 200px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; cursor: pointer; position: relative; border: 0.5px solid #eee; background: #fff; user-select: none; }
+    .card.known { border-color: #2aae6e; }
+    .card.review { border-color: #e8a82a; }
+    .card-topic-tag { position: absolute; top: 10px; left: 14px; font-size: 11px; padding: 2px 8px; border-radius: 999px; }
+    .card-hint { position: absolute; top: 14px; right: 16px; font-size: 11px; color: #aaa; }
+    .card-fr { font-size: 36px; font-weight: 500; text-align: center; line-height: 1.2; }
+    .card-pron { font-size: 14px; color: #888; font-style: italic; }
+    .card-en-small { font-size: 14px; color: #888; }
+    .card-en { font-size: 30px; font-weight: 500; text-align: center; line-height: 1.2; }
+
+    .speaker-row { display: flex; justify-content: center; margin-top: 14px; }
+    .btn-speak { padding: 8px 24px; border-radius: 999px; border: none; background: #e8852a; color: #fff; cursor: pointer; font-size: 20px; transition: transform 0.1s, background 0.2s; }
+    .btn-speak.playing { background: #c46a1a; transform: scale(0.95); }
+
+    .mark-row { display: flex; gap: 10px; margin-top: 12px; }
+    .btn-mark { flex: 1; padding: 6px 0; font-size: 18px; border-radius: 12px; border: 0.5px solid #ddd; background: #fff; color: #888; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .btn-mark.known { background: #e6f9f0; color: #2aae6e; border-color: #2aae6e; }
+    .btn-mark.review { background: #fff8e1; color: #e8a82a; border-color: #e8a82a; }
+
+    .nav-row { display: flex; gap: 10px; margin-top: 10px; }
+    .btn-nav { flex: 1; padding: 8px 0; font-size: 18px; border-radius: 12px; border: 0.5px solid #ddd; background: #fff; color: #333; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .btn-shuffle { padding: 8px 20px; font-size: 18px; border-radius: 12px; border: 0.5px solid #ddd; background: #fff; color: #888; cursor: pointer; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script>
+const { useState, useEffect, useCallback } = React;
+
+const DEFAULT_CARDS = [
+  { fr: "bonjour", pronunciation: "bohn-ZHOOR", en: "hello / good day", topic: "Everyday" },
+  { fr: "merci", pronunciation: "mehr-SEE", en: "thank you", topic: "Everyday" },
+  { fr: "s'il vous plaît", pronunciation: "seel voo PLEH", en: "please", topic: "Everyday" },
+  { fr: "au revoir", pronunciation: "oh reh-VWAHR", en: "goodbye", topic: "Everyday" },
+  { fr: "oui", pronunciation: "WEE", en: "yes", topic: "Everyday" },
+  { fr: "non", pronunciation: "NOH", en: "no", topic: "Everyday" },
+  { fr: "l'eau", pronunciation: "LOH", en: "water", topic: "Everyday" },
+  { fr: "le pain", pronunciation: "leh PAN", en: "bread", topic: "Everyday" },
+  { fr: "la pomme", pronunciation: "lah POM", en: "the apple", topic: "Everyday" },
+  { fr: "rouge", pronunciation: "ROOZH", en: "red", topic: "Everyday" },
+  { fr: "bleu", pronunciation: "BLUH", en: "blue", topic: "Everyday" },
+  { fr: "grand", pronunciation: "GRAHN", en: "big / tall", topic: "Everyday" },
+  { fr: "petit", pronunciation: "peh-TEE", en: "small / little", topic: "Everyday" },
+  { fr: "aujourd'hui", pronunciation: "oh-zhoor-DWEE", en: "today", topic: "Everyday" },
+  { fr: "demain", pronunciation: "deh-MAN", en: "tomorrow", topic: "Everyday" },
+  { fr: "le chat", pronunciation: "leh SHA", en: "the cat", topic: "Everyday" },
+  { fr: "le chien", pronunciation: "leh SHYEN", en: "the dog", topic: "Everyday" },
+  { fr: "janvier", pronunciation: "zhahn-VYEH", en: "January", topic: "Months & Days" },
+  { fr: "février", pronunciation: "feh-VRYEH", en: "February", topic: "Months & Days" },
+  { fr: "mars", pronunciation: "MARS", en: "March", topic: "Months & Days" },
+  { fr: "avril", pronunciation: "ah-VREEL", en: "April", topic: "Months & Days" },
+  { fr: "mai", pronunciation: "MEH", en: "May", topic: "Months & Days" },
+  { fr: "juin", pronunciation: "ZHWAN", en: "June", topic: "Months & Days" },
+  { fr: "juillet", pronunciation: "zhwee-YEH", en: "July", topic: "Months & Days" },
+  { fr: "août", pronunciation: "OOT", en: "August", topic: "Months & Days" },
+  { fr: "septembre", pronunciation: "sep-TAHM-breh", en: "September", topic: "Months & Days" },
+  { fr: "octobre", pronunciation: "ok-TOH-breh", en: "October", topic: "Months & Days" },
+  { fr: "novembre", pronunciation: "noh-VAHM-breh", en: "November", topic: "Months & Days" },
+  { fr: "décembre", pronunciation: "deh-SAHM-breh", en: "December", topic: "Months & Days" },
+  { fr: "lundi", pronunciation: "lun-DEE", en: "Monday", topic: "Months & Days" },
+  { fr: "mardi", pronunciation: "mar-DEE", en: "Tuesday", topic: "Months & Days" },
+  { fr: "mercredi", pronunciation: "mehr-kreh-DEE", en: "Wednesday", topic: "Months & Days" },
+  { fr: "jeudi", pronunciation: "zhuh-DEE", en: "Thursday", topic: "Months & Days" },
+  { fr: "vendredi", pronunciation: "vahn-dreh-DEE", en: "Friday", topic: "Months & Days" },
+  { fr: "samedi", pronunciation: "sahm-DEE", en: "Saturday", topic: "Months & Days" },
+  { fr: "dimanche", pronunciation: "dee-MAHNSH", en: "Sunday", topic: "Months & Days" },
+  { fr: "la semaine", pronunciation: "lah seh-MEN", en: "the week", topic: "Months & Days" },
+  { fr: "le mois", pronunciation: "leh MWAH", en: "the month", topic: "Months & Days" },
+  { fr: "l'année", pronunciation: "lah-NEH", en: "the year", topic: "Months & Days" },
+  { fr: "le week-end", pronunciation: "leh wee-KEND", en: "the weekend", topic: "Months & Days" },
+  { fr: "un", pronunciation: "AN", en: "one (1)", topic: "Numbers" },
+  { fr: "deux", pronunciation: "DUH", en: "two (2)", topic: "Numbers" },
+  { fr: "trois", pronunciation: "TWAH", en: "three (3)", topic: "Numbers" },
+  { fr: "quatre", pronunciation: "KAH-treh", en: "four (4)", topic: "Numbers" },
+  { fr: "cinq", pronunciation: "SANK", en: "five (5)", topic: "Numbers" },
+  { fr: "six", pronunciation: "SEES", en: "six (6)", topic: "Numbers" },
+  { fr: "sept", pronunciation: "SET", en: "seven (7)", topic: "Numbers" },
+  { fr: "huit", pronunciation: "WEET", en: "eight (8)", topic: "Numbers" },
+  { fr: "neuf", pronunciation: "NUF", en: "nine (9)", topic: "Numbers" },
+  { fr: "dix", pronunciation: "DEES", en: "ten (10)", topic: "Numbers" },
+  { fr: "onze", pronunciation: "ONZ", en: "eleven (11)", topic: "Numbers" },
+  { fr: "douze", pronunciation: "DOOZ", en: "twelve (12)", topic: "Numbers" },
+  { fr: "treize", pronunciation: "TREZ", en: "thirteen (13)", topic: "Numbers" },
+  { fr: "quatorze", pronunciation: "kah-TORZ", en: "fourteen (14)", topic: "Numbers" },
+  { fr: "quinze", pronunciation: "KANZ", en: "fifteen (15)", topic: "Numbers" },
+  { fr: "seize", pronunciation: "SEZ", en: "sixteen (16)", topic: "Numbers" },
+  { fr: "dix-sept", pronunciation: "dee-SET", en: "seventeen (17)", topic: "Numbers" },
+  { fr: "dix-huit", pronunciation: "dee-WEET", en: "eighteen (18)", topic: "Numbers" },
+  { fr: "dix-neuf", pronunciation: "dee-NUF", en: "nineteen (19)", topic: "Numbers" },
+  { fr: "vingt", pronunciation: "VAN", en: "twenty (20)", topic: "Numbers" },
+  { fr: "trente", pronunciation: "TRONT", en: "thirty (30)", topic: "Numbers" },
+  { fr: "quarante", pronunciation: "kah-RONT", en: "forty (40)", topic: "Numbers" },
+  { fr: "cinquante", pronunciation: "san-KONT", en: "fifty (50)", topic: "Numbers" },
+  { fr: "soixante", pronunciation: "swah-SONT", en: "sixty (60)", topic: "Numbers" },
+  { fr: "soixante-dix", pronunciation: "swah-sont-DEES", en: "seventy (70)", topic: "Numbers" },
+  { fr: "quatre-vingts", pronunciation: "kah-treh-VAN", en: "eighty (80)", topic: "Numbers" },
+  { fr: "quatre-vingt-dix", pronunciation: "kah-treh-van-DEES", en: "ninety (90)", topic: "Numbers" },
+  { fr: "cent", pronunciation: "SON", en: "one hundred (100)", topic: "Numbers" },
+  { fr: "je ne comprends pas", pronunciation: "zheh neh kom-PRON pah", en: "I don't understand", topic: "Classroom" },
+  { fr: "répétez, s'il vous plaît", pronunciation: "ray-pay-TAY seel voo PLEH", en: "repeat, please", topic: "Classroom" },
+  { fr: "l'élève", pronunciation: "lay-LEV", en: "the student", topic: "Classroom" },
+  { fr: "le professeur", pronunciation: "leh pro-feh-SUR", en: "the teacher", topic: "Classroom" },
+  { fr: "l'école", pronunciation: "lay-KOL", en: "the school", topic: "Classroom" },
+  { fr: "le livre", pronunciation: "leh LEE-vreh", en: "the book", topic: "Classroom" },
+  { fr: "manger", pronunciation: "mahn-ZHEH", en: "to eat", topic: "Verbs" },
+  { fr: "parler", pronunciation: "par-LEH", en: "to speak", topic: "Verbs" },
+  { fr: "aller", pronunciation: "ah-LEH", en: "to go", topic: "Verbs" },
+  { fr: "avoir", pronunciation: "ah-VWAHR", en: "to have", topic: "Verbs" },
+  { fr: "être", pronunciation: "EH-treh", en: "to be", topic: "Verbs" },
+  { fr: "aimer", pronunciation: "ay-MAY", en: "to like / to love", topic: "Verbs" },
+  { fr: "la famille", pronunciation: "lah fah-MEE", en: "the family", topic: "Family & Home" },
+  { fr: "la mère", pronunciation: "lah MEHR", en: "the mother", topic: "Family & Home" },
+  { fr: "le père", pronunciation: "leh PEHR", en: "the father", topic: "Family & Home" },
+  { fr: "le frère", pronunciation: "leh FREHR", en: "the brother", topic: "Family & Home" },
+  { fr: "la sœur", pronunciation: "lah SUR", en: "the sister", topic: "Family & Home" },
+  { fr: "la maison", pronunciation: "lah meh-ZON", en: "the house", topic: "Family & Home" },
+  { fr: "le métro", pronunciation: "leh may-TRO", en: "the subway", topic: "City & Transport" },
+  { fr: "la voiture", pronunciation: "lah vwah-TYUR", en: "the car", topic: "City & Transport" },
+  { fr: "la rue", pronunciation: "lah RYU", en: "the street", topic: "City & Transport" },
+  { fr: "le musée", pronunciation: "leh myoo-ZAY", en: "the museum", topic: "City & Transport" },
+];
+
+const TOPIC_COLORS = {
+  "All":"#2a85e8","Everyday":"#e85a2a","Months & Days":"#2aae6e",
+  "Numbers":"#9b2ae8","Classroom":"#e8a82a","Adjectives":"#e82a7a",
+  "Verbs":"#2ab8e8","Family & Home":"#e86a2a","City & Transport":"#5a8ae8","My Words":"#16a085",
+};
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function buildDeck(topic, skip, knownSet, cards) {
+  let f = topic === "All" ? cards : cards.filter(c => c.topic === topic);
+  if (skip) f = f.filter(c => !knownSet.has(c.fr));
+  return f.length > 0 ? f : (topic === "All" ? cards : cards.filter(c => c.topic === topic));
+}
+
+function extractId(url) {
+  const m = url.match(/\/d\/([\w-]+)/);
+  return m ? m[1] : null;
+}
+
+function App() {
+  const [allCards, setAllCards] = useState(DEFAULT_CARDS);
+  const [topic, setTopic] = useState("All");
+  const [skipKnown, setSkipKnown] = useState(false);
+  const [known, setKnown] = useState(new Set());
+  const [review, setReview] = useState(new Set());
+  const [deck, setDeck] = useState(DEFAULT_CARDS);
+  const [idx, setIdx] = useState(0);
+  const [flipped, setFlipped] = useState(false);
+  const [speaking, setSpeaking] = useState(false);
+  const [showSheet, setShowSheet] = useState(false);
+  const [sheetUrl, setSheetUrl] = useState("");
+  const [sheetStatus, setSheetStatus] = useState("idle");
+  const [sheetError, setSheetError] = useState("");
+
+  useEffect(() => {
+    try {
+      const k = JSON.parse(localStorage.getItem("fr-known") || "[]");
+      const r = JSON.parse(localStorage.getItem("fr-review") || "[]");
+      const u = localStorage.getItem("fr-sheet-url") || "";
+      setKnown(new Set(k)); setReview(new Set(r)); setSheetUrl(u);
+    } catch(e){}
+  }, []);
+
+  const save = () => {
+    localStorage.setItem("fr-known", JSON.stringify([...known]));
+    localStorage.setItem("fr-review", JSON.stringify([...review]));
+    alert("Progress saved! ✓");
+  };
+
+  const reset = () => {
+    if (!confirm("Reset all progress?")) return;
+    setKnown(new Set()); setReview(new Set());
+    localStorage.removeItem("fr-known"); localStorage.removeItem("fr-review");
+  };
+
+  const fetchSheet = async (url) => {
+    setSheetStatus("loading"); setSheetError("");
+    try {
+      const id = extractId(url);
+      if (!id) throw new Error("Invalid URL. Copy the full Google Sheets link.");
+      const csvUrl = `https://docs.google.com/spreadsheets/d/${id}/pub?output=csv`;
+      const res = await fetch(csvUrl);
+      if (!res.ok) throw new Error("Could not fetch. Make sure the sheet is published via File → Share → Publish to web → CSV.");
+      const text = await res.text();
+      const lines = text.trim().split("\n").slice(1);
+      const newCards = lines.map(line => {
+        const cols = line.match(/(".*?"|[^,]+)(?=,|$)/g) || [];
+        const c = cols.map(x => x.replace(/^"|"$/g,"").trim());
+        return { fr: c[0]||"", pronunciation: c[1]||"", en: c[2]||"", topic: c[3]||"My Words" };
+      }).filter(c => c.fr && c.en);
+      if (!newCards.length) throw new Error("No cards found. Check your columns: French, Pronunciation, English, Topic");
+      const combined = [...DEFAULT_CARDS, ...newCards];
+      setAllCards(combined);
+      setDeck(buildDeck(topic, skipKnown, known, combined));
+      setIdx(0); setFlipped(false);
+      setSheetStatus("success");
+      localStorage.setItem("fr-sheet-url", url);
+    } catch(e) { setSheetStatus("error"); setSheetError(e.message); }
+  };
+
+  const topics = ["All", ...new Set(allCards.map(c => c.topic))];
+  const color = TOPIC_COLORS[topic] || "#2a85e8";
+  const card = deck[idx];
+  const progress = Math.round(((known.size + review.size) / deck.length) * 100);
+  const isKnown = known.has(card.fr);
+  const isReview = review.has(card.fr);
+
+  const speak = useCallback(() => {
+    if (!window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(card.fr);
+    u.lang = "fr-FR"; u.rate = 0.85;
+    setSpeaking(true);
+    u.onend = () => setSpeaking(false);
+    u.onerror = () => setSpeaking(false);
+    window.speechSynthesis.speak(u);
+  }, [card]);
+
+  const go = (d) => { setFlipped(false); setIdx(i => (i+d+deck.length)%deck.length); };
+
+  const mark = (type) => {
+    const id = card.fr;
+    setKnown(s => { const n=new Set(s); type==="known"?n.add(id):n.delete(id); return n; });
+    setReview(s => { const n=new Set(s); type==="review"?n.add(id):n.delete(id); return n; });
+  };
+
+  const changeTopic = (t) => { setTopic(t); setDeck(buildDeck(t, skipKnown, known, allCards)); setIdx(0); setFlipped(false); };
+  const toggleSkip = () => { const n=!skipKnown; setSkipKnown(n); setDeck(buildDeck(topic,n,known,allCards)); setIdx(0); setFlipped(false); };
+
+  return React.createElement("div", { id: "root" },
+    // Top bar
+    React.createElement("div", { className: "top-bar" },
+      React.createElement("div", { className: "overall" },
+        React.createElement("span", { style:{color:"#2aae6e",fontWeight:500} }, known.size+" ✓"),
+        " / ",
+        React.createElement("span", { style:{color:"#e8a82a",fontWeight:500} }, review.size+" ↺"),
+        " / ",
+        React.createElement("span", { style:{fontWeight:500} }, allCards.length+" total")
+      ),
+      React.createElement("div", { className: "btn-row" },
+        React.createElement("button", { className:"btn btn-sheet"+(sheetStatus==="success"?" connected":""), onClick:()=>setShowSheet(p=>!p) }, "📊 "+(sheetStatus==="success"?"Connected":"Connect Sheet")),
+        React.createElement("button", { className:"btn btn-save", style:{background:color}, onClick:save }, "Save"),
+        React.createElement("button", { className:"btn btn-reset", onClick:reset }, "Reset"),
+      )
+    ),
+
+    // Sheet panel
+    showSheet && React.createElement("div", { className:"sheet-panel" },
+      React.createElement("h3", null, "📊 Connect Google Sheet"),
+      React.createElement("p", null,
+        "1. Create a sheet with columns: French, Pronunciation, English, Topic\n",
+        React.createElement("br"),
+        "2. Click File → Share → Publish to web → CSV → Publish\n",
+        React.createElement("br"),
+        "3. Paste the published link below"
+      ),
+      React.createElement("div", { className:"sheet-input-row" },
+        React.createElement("input", { className:"sheet-input", value:sheetUrl, onChange:e=>setSheetUrl(e.target.value), placeholder:"https://docs.google.com/spreadsheets/d/..." }),
+        React.createElement("button", { className:"btn-load", disabled:!sheetUrl||sheetStatus==="loading", onClick:()=>fetchSheet(sheetUrl) }, sheetStatus==="loading"?"Loading...":"Load")
+      ),
+      sheetStatus==="success" && React.createElement("div",{className:"sheet-success"},"✅ Sheet loaded successfully!"),
+      sheetStatus==="error" && React.createElement("div",{className:"sheet-error"},"⚠️ "+sheetError),
+    ),
+
+    // Topics
+    React.createElement("div", { className:"topic-label" }, "topic"),
+    React.createElement("div", { className:"topic-row" },
+      topics.map(t => React.createElement("button", {
+        key:t, className:"topic-btn"+(topic===t?" active":""),
+        style: topic===t?{background:TOPIC_COLORS[t]||"#2a85e8"}:{},
+        onClick:()=>changeTopic(t)
+      }, t))
+    ),
+
+    // Skip toggle
+    React.createElement("div", { className:"skip-row", onClick:toggleSkip },
+      React.createElement("div", { className:"toggle"+(skipKnown?" on":""), style:skipKnown?{background:color}:{} },
+        React.createElement("div", { className:"toggle-knob" })
+      ),
+      React.createElement("span", { className:"skip-label" },
+        "Skip words I know",
+        skipKnown && React.createElement("span",{className:"skip-count",style:{color}}," ("+deck.length+" remaining)")
+      )
+    ),
+
+    // Card header
+    React.createElement("div", { className:"card-header" },
+      React.createElement("span", { className:"card-counter" }, "Card "+(idx+1)+" of "+deck.length),
+      React.createElement("div", { className:"badge-row" },
+        React.createElement("span",{className:"badge badge-known"}, known.size+" ✓"),
+        React.createElement("span",{className:"badge badge-review"}, review.size+" ↺"),
+      )
+    ),
+
+    // Progress bar
+    React.createElement("div", { className:"progress-bar" },
+      React.createElement("div", { className:"progress-fill", style:{width:progress+"%",background:color} })
+    ),
+
+    // Card
+    React.createElement("div", {
+      className:"card"+(isKnown?" known":isReview?" review":""),
+      onClick:()=>setFlipped(f=>!f)
+    },
+      React.createElement("span", { className:"card-topic-tag", style:{background:(TOPIC_COLORS[card.topic]||"#2a85e8")+"22",color:TOPIC_COLORS[card.topic]||"#2a85e8"} }, card.topic),
+      React.createElement("span", { className:"card-hint" }, flipped?"meaning":"tap to reveal"),
+      !flipped
+        ? React.createElement(React.Fragment, null,
+            React.createElement("div",{className:"card-fr"},card.fr),
+            React.createElement("div",{className:"card-pron"},card.pronunciation)
+          )
+        : React.createElement(React.Fragment, null,
+            React.createElement("div",{className:"card-en-small"},card.fr),
+            React.createElement("div",{className:"card-en"},card.en)
+          )
+    ),
+
+    // Speaker
+    React.createElement("div", { className:"speaker-row" },
+      React.createElement("button", { className:"btn-speak"+(speaking?" playing":""), onClick:speak }, "🔊")
+    ),
+
+    // Mark buttons
+    React.createElement("div", { className:"mark-row" },
+      React.createElement("button", { className:"btn-mark"+(isKnown?" known":""), onClick:()=>mark(isKnown?null:"known") }, "✓"),
+      React.createElement("button", { className:"btn-mark"+(isReview?" review":""), onClick:()=>mark(isReview?null:"review") }, "↺"),
+    ),
+
+    // Nav
+    React.createElement("div", { className:"nav-row" },
+      React.createElement("button",{className:"btn-nav",onClick:()=>go(-1)},"←"),
+      React.createElement("button",{className:"btn-shuffle",onClick:()=>{setDeck(d=>shuffle(d));setIdx(0);setFlipped(false);}},"⇄"),
+      React.createElement("button",{className:"btn-nav",onClick:()=>go(1)},"→"),
+    )
+  );
+}
+
+ReactDOM.render(React.createElement(App), document.getElementById("root"));
+</script>
+</body>
+</html>
