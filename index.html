@@ -247,9 +247,14 @@ function App() {
   const fetchSheet = async (url) => {
     setSheetStatus("loading"); setSheetError("");
     try {
-      const id = extractId(url);
-      if (!id) throw new Error("Invalid URL. Copy the full Google Sheets link.");
-      const csvUrl = `https://docs.google.com/spreadsheets/d/${id}/pub?output=csv`;
+      if (!url.includes("google.com/spreadsheets")) throw new Error("Invalid URL. Copy the full Google Sheets link.");
+      // Accept both long published URLs and short sheet URLs
+      let csvUrl = url;
+      if (!url.includes("pub?output=csv")) {
+        const id = extractId(url);
+        if (!id) throw new Error("Invalid URL format.");
+        csvUrl = `https://docs.google.com/spreadsheets/d/${id}/pub?output=csv`;
+      }
       const res = await fetch(csvUrl);
       if (!res.ok) throw new Error("Could not fetch. Make sure the sheet is published via File → Share → Publish to web → CSV.");
       const text = await res.text();
