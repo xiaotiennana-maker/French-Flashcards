@@ -1,61 +1,75 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>French Flashcards</title>
-  <link rel="manifest" href="manifest.json" />
-  <meta name="theme-color" content="#2a85e8" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <meta name="apple-mobile-web-app-title" content="French Cards" />
-  <link rel="apple-touch-icon" href="icon.png" />
+  <link rel="manifest" href="manifest.json"/>
+  <meta name="theme-color" content="#2a85e8"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-title" content="French Cards"/>
+  <link rel="apple-touch-icon" href="icon.png"/>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#fff;color:#111}
-    #root{max-width:520px;margin:0 auto;padding:1rem}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#fff;color:#111;padding:1rem;max-width:520px;margin:0 auto}
     button{cursor:pointer;font-family:inherit}
-    .row{display:flex;align-items:center;gap:8px}
-    .pill{border-radius:999px;border:0.5px solid #ddd;font-size:12px;font-weight:500;padding:5px 12px;background:#fff;color:#666}
-    .pill.active{border:none;color:#fff}
-    .panel{background:#f7f7f7;border:0.5px solid #ddd;border-radius:16px;padding:1rem;margin-bottom:.75rem}
-    .panel-title{font-size:13px;font-weight:500;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
-    .close-btn{font-size:12px;padding:2px 10px;border-radius:999px;border:0.5px solid #ddd;background:#fff;color:#666}
-    input,select{font-family:inherit;outline:none;border:0.5px solid #ddd;border-radius:8px;padding:6px 10px;font-size:12px;background:#fff;width:100%}
-    .field{margin-bottom:8px}
-    .field-label{font-size:12px;color:#666;margin-bottom:4px}
-    .topic-btn{padding:5px 12px;border-radius:999px;font-size:12px;border:0.5px solid #ddd;background:#fff;color:#666}
-    .topic-btn.active{border:none;color:#fff;font-weight:500}
-    .toggle-wrap{display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:.75rem}
-    .toggle{width:40px;height:22px;border-radius:999px;background:#e5e5e5;position:relative;transition:background .2s;flex-shrink:0}
-    .toggle.on{background:#2a85e8}
-    .knob{width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
-    .toggle.on .knob{left:21px}
-    .prog-bar{height:4px;border-radius:999px;background:#f0f0f0;margin-bottom:.75rem;overflow:hidden}
-    .prog-fill{height:100%;border-radius:999px;transition:width .3s}
-    .badge{font-size:12px;padding:3px 10px;border-radius:20px}
-    .bk{background:#e6f9f0;color:#2aae6e}
-    .br{background:#fff8e1;color:#e8a82a}
-    .card-box{border-radius:20px;box-shadow:0 4px 24px rgba(0,0,0,.07);padding:2rem 1.5rem;min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;cursor:pointer;position:relative;border:0.5px solid #eee;background:#fff;user-select:none}
-    .mark-btn{flex:1;padding:6px 0;font-size:18px;border-radius:12px;border:0.5px solid #ddd;background:#fff;color:#888;display:flex;align-items:center;justify-content:center}
-    .mark-btn.k{background:#e6f9f0;color:#2aae6e;border-color:#2aae6e}
-    .mark-btn.r{background:#fff8e1;color:#e8a82a;border-color:#e8a82a}
-    .nav-btn{flex:1;padding:8px 0;font-size:18px;border-radius:12px;border:0.5px solid #ddd;background:#fff;color:#333;display:flex;align-items:center;justify-content:center}
-    .topic-row-item{display:flex;align-items:center;gap:6px;margin-bottom:6px;background:#fff;border:0.5px solid #eee;border-radius:8px;padding:4px 8px}
-    .topic-row-item span{flex:1;font-size:13px}
-    .icon-btn{padding:4px 8px;border-radius:8px;border:0.5px solid #ddd;background:#fff;font-size:13px}
+    input,select{font-family:inherit;font-size:13px;padding:7px 10px;border:1px solid #ddd;border-radius:8px;outline:none;background:#fff;width:100%}
+    .topbar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+    .stat{font-size:12px;color:#666}
+    .btns{display:flex;gap:6px;flex-wrap:wrap}
+    .btn{font-size:12px;padding:5px 12px;border-radius:999px;border:1px solid #ddd;background:#fff;color:#666;font-weight:500}
+    .btn.primary{border:none;color:#fff}
+    .panel{background:#f8f8f8;border:1px solid #eee;border-radius:16px;padding:14px;margin-bottom:12px}
+    .panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;font-size:13px;font-weight:600}
+    .close{font-size:12px;padding:3px 10px;border-radius:999px;border:1px solid #ddd;background:#fff;color:#666}
+    .field{margin-bottom:10px}
+    .label{font-size:11px;color:#888;margin-bottom:4px}
+    .topic-pills{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+    .tp{font-size:12px;padding:5px 12px;border-radius:999px;border:1px solid #ddd;background:#fff;color:#666}
+    .tp.on{border:none;color:#fff;font-weight:500}
+    .skip{display:flex;align-items:center;gap:8px;margin-bottom:12px;cursor:pointer}
+    .tog{width:40px;height:22px;border-radius:999px;background:#ddd;position:relative;flex-shrink:0;transition:background .2s}
+    .tog.on{background:#2a85e8}
+    .knob{width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+    .tog.on .knob{left:21px}
+    .prog{height:4px;border-radius:99px;background:#eee;overflow:hidden;margin-bottom:12px}
+    .progfill{height:100%;border-radius:99px;transition:width .3s}
+    .ctr{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:13px;color:#666}
+    .badges{display:flex;gap:6px}
+    .bk{background:#e6f9f0;color:#2aae6e;font-size:12px;padding:3px 10px;border-radius:20px}
+    .br{background:#fff8e1;color:#e8a82a;font-size:12px;padding:3px 10px;border-radius:20px}
+    .card{border-radius:20px;box-shadow:0 4px 20px rgba(0,0,0,.06);padding:2rem 1.5rem;min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;cursor:pointer;position:relative;border:1px solid #eee;background:#fff;user-select:none;margin-bottom:14px}
+    .tag{position:absolute;top:10px;left:14px;font-size:11px;padding:2px 8px;border-radius:999px}
+    .hint{position:absolute;top:14px;right:16px;font-size:11px;color:#bbb}
+    .fr{font-size:36px;font-weight:500;text-align:center;line-height:1.2}
+    .pr{font-size:14px;color:#999;font-style:italic}
+    .en-sm{font-size:14px;color:#999}
+    .en{font-size:30px;font-weight:500;text-align:center;line-height:1.2}
+    .speak-row{display:flex;justify-content:center;margin-bottom:12px}
+    .speak{padding:8px 26px;border-radius:999px;border:none;background:#e8852a;color:#fff;font-size:22px;transition:transform .1s,background .2s}
+    .speak.on{background:#c46a1a;transform:scale(.94)}
+    .marks{display:flex;gap:10px;margin-bottom:10px}
+    .mk{flex:1;padding:7px 0;font-size:18px;border-radius:12px;border:1px solid #ddd;background:#fff;color:#999;display:flex;align-items:center;justify-content:center}
+    .mk.k{background:#e6f9f0;color:#2aae6e;border-color:#2aae6e}
+    .mk.r{background:#fff8e1;color:#e8a82a;border-color:#e8a82a}
+    .navs{display:flex;gap:10px}
+    .nv{flex:1;padding:8px 0;font-size:18px;border-radius:12px;border:1px solid #ddd;background:#fff;color:#333;display:flex;align-items:center;justify-content:center}
+    .shuf{padding:8px 18px;font-size:18px;border-radius:12px;border:1px solid #ddd;background:#fff;color:#999}
+    .trow{display:flex;align-items:center;gap:6px;margin-bottom:6px;background:#fff;border:1px solid #eee;border-radius:8px;padding:5px 8px}
+    .trow span{flex:1;font-size:13px}
+    .ib{padding:4px 8px;border-radius:6px;border:1px solid #ddd;background:#fff;font-size:13px}
   </style>
 </head>
 <body>
-<div id="root"></div>
+<div id="app"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script>
-const {useState, useEffect, useCallback, createElement: h} = React;
+const {useState,useCallback,createElement:e} = React;
 
-const COLORS = {"All":"#2a85e8","Everyday":"#e85a2a","Months & Days":"#2aae6e","Numbers":"#9b2ae8","Classroom":"#e8a82a","Adjectives":"#e82a7a","Verbs":"#2ab8e8","Family & Home":"#e86a2a","City & Transport":"#5a8ae8","My Words":"#16a085"};
+const COLORS={"All":"#2a85e8","Everyday":"#e85a2a","Months & Days":"#2aae6e","Numbers":"#9b2ae8","Classroom":"#e8a82a","Adjectives":"#e82a7a","Verbs":"#2ab8e8","Family & Home":"#e86a2a","City & Transport":"#5a8ae8","My Words":"#16a085"};
 
-const BASE = [
+const BASE=[
   {fr:"bonjour",pr:"bohn-ZHOOR",en:"hello / good day",t:"Everyday"},
   {fr:"merci",pr:"mehr-SEE",en:"thank you",t:"Everyday"},
   {fr:"s'il vous plaît",pr:"seel voo PLEH",en:"please",t:"Everyday"},
@@ -152,304 +166,243 @@ const BASE = [
   {fr:"la poste",pr:"lah POST",en:"the post office",t:"City & Transport"},
 ];
 
-function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]]}return b}
-function mkDeck(topic,skip,knownSet,cards){let f=topic==="All"?cards:cards.filter(c=>c.t===topic);if(skip)f=f.filter(c=>!knownSet.has(c.fr));return f.length>0?f:(topic==="All"?cards:cards.filter(c=>c.t===topic))}
-function ls(k,def=""){try{return localStorage.getItem(k)||def}catch(e){return def}}
-function lsSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+const ls=(k,d="")=>{try{return localStorage.getItem(k)||d}catch(e){return d}};
+const lsj=(k,d)=>{try{return JSON.parse(ls(k,JSON.stringify(d)))}catch(e){return d}};
+const lss=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+
+const shuf=a=>{const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]]}return b};
+const mkDeck=(topic,skip,known,cards)=>{
+  let f=topic==="All"?cards:cards.filter(c=>c.t===topic);
+  if(skip)f=f.filter(c=>!known.has(c.fr));
+  return f.length?f:(topic==="All"?cards:cards.filter(c=>c.t===topic));
+};
 
 function App(){
-  const [cards, setCards] = useState(()=>{
-    try{const w=JSON.parse(ls("fr-custom-words","[]"));return w.length?[...BASE,...w]:BASE}catch(e){return BASE}
-  });
-  const [topic, setTopic] = useState("All");
-  const [skip, setSkip] = useState(false);
-  const [known, setKnown] = useState(()=>new Set(JSON.parse(ls("fr-known","[]"))));
-  const [review, setReview] = useState(()=>new Set(JSON.parse(ls("fr-review","[]"))));
-  const [deck, setDeck] = useState(()=>mkDeck("All",false,new Set(),BASE));
-  const [idx, setIdx] = useState(0);
-  const [flip, setFlip] = useState(false);
-  const [speaking, setSpeaking] = useState(false);
-  const [customTopics, setCustomTopics] = useState(()=>{try{return JSON.parse(ls("fr-custom-topics","[]"))}catch(e){return[]}});
+  const [cards,setCards]=useState(()=>{const w=lsj("fr-words",[]);return w.length?[...BASE,...w]:BASE});
+  const [customTopics,setCustomTopics]=useState(()=>lsj("fr-topics",[]));
+  const [known,setKnown]=useState(()=>new Set(lsj("fr-known",[])));
+  const [review,setReview]=useState(()=>new Set(lsj("fr-review",[])));
+  const [topic,setTopic]=useState("All");
+  const [skip,setSkip]=useState(false);
+  const [deck,setDeck]=useState(()=>mkDeck("All",false,new Set(),BASE));
+  const [idx,setIdx]=useState(0);
+  const [flip,setFlip]=useState(false);
+  const [spk,setSpk]=useState(false);
+  // panels
+  const [panel,setPanel]=useState(null); // "add"|"sheet"|"topics"|null
+  // add word
+  const [nFr,setNFr]=useState("");const [nPr,setNPr]=useState("");const [nEn,setNEn]=useState("");const [nT,setNT]=useState("Everyday");const [msg,setMsg]=useState("");
+  // sheet
+  const [sUrl,setSUrl]=useState(()=>ls("fr-sheet-url",""));const [sSt,setSSt]=useState("idle");const [sErr,setSErr]=useState("");
+  // topic manager
+  const [editT,setEditT]=useState(null);const [editN,setEditN]=useState("");const [newTN,setNewTN]=useState("");
 
-  // Panel visibility
-  const [showSheet, setShowSheet] = useState(false);
-  const [showAddWord, setShowAddWord] = useState(false);
-  const [showTopics, setShowTopics] = useState(false);
+  const color=COLORS[topic]||"#2a85e8";
+  const allBuiltin=Object.keys(COLORS).filter(k=>k!=="All");
+  const allCustom=customTopics.filter(t=>!Object.keys(COLORS).includes(t));
+  const allTopics=["All",...allBuiltin,...allCustom];
+  const allManage=[...allBuiltin,...allCustom];
+  const card=deck[idx];
+  const isK=known.has(card.fr);
+  const isR=review.has(card.fr);
+  const prog=Math.round(((known.size+review.size)/deck.length)*100);
 
-  // Sheet state
-  const [sheetUrl, setSheetUrl] = useState(ls("fr-sheet-url",""));
-  const [sheetSt, setSheetSt] = useState("idle");
-  const [sheetErr, setSheetErr] = useState("");
-
-  // Add word state
-  const [newFr, setNewFr] = useState("");
-  const [newPr, setNewPr] = useState("");
-  const [newEn, setNewEn] = useState("");
-  const [newWordTopic, setNewWordTopic] = useState("Everyday");
-  const [addMsg, setAddMsg] = useState("");
-
-  // Topic manager state
-  const [editT, setEditT] = useState(null);
-  const [editName, setEditName] = useState("");
-  const [newTopicName, setNewTopicName] = useState("");
-
-  const allTopics = ["All",...Object.keys(COLORS).filter(k=>k!=="All"),...customTopics.filter(t=>!Object.keys(COLORS).includes(t))];
-  const color = COLORS[topic]||"#2a85e8";
-  const card = deck[idx];
-  const isK = known.has(card.fr);
-  const isR = review.has(card.fr);
-  const prog = Math.round(((known.size+review.size)/deck.length)*100);
-
-  const changeTopic = (t)=>{setTopic(t);setDeck(mkDeck(t,skip,known,cards));setIdx(0);setFlip(false)};
-  const toggleSkip = ()=>{const n=!skip;setSkip(n);setDeck(mkDeck(topic,n,known,cards));setIdx(0);setFlip(false)};
-  const go = (d)=>{setFlip(false);setIdx(i=>(i+d+deck.length)%deck.length)};
-
-  const mark = (type)=>{
+  const go=(d)=>{setFlip(false);setIdx(i=>(i+d+deck.length)%deck.length)};
+  const chgTopic=(t)=>{setTopic(t);setDeck(mkDeck(t,skip,known,cards));setIdx(0);setFlip(false)};
+  const togSkip=()=>{const n=!skip;setSkip(n);setDeck(mkDeck(topic,n,known,cards));setIdx(0);setFlip(false)};
+  const mark=(type)=>{
     const id=card.fr;
     setKnown(s=>{const n=new Set(s);type==="k"?n.add(id):n.delete(id);return n});
     setReview(s=>{const n=new Set(s);type==="r"?n.add(id):n.delete(id);return n});
   };
+  const save=()=>{lss("fr-known",[...known]);lss("fr-review",[...review]);alert("Saved ✓")};
+  const reset=()=>{if(!confirm("Reset all progress?"))return;setKnown(new Set());setReview(new Set());lss("fr-known",[]);lss("fr-review",[])};
 
-  const save = ()=>{
-    lsSet("fr-known",JSON.stringify([...known]));
-    lsSet("fr-review",JSON.stringify([...review]));
-    alert("Progress saved ✓");
-  };
-
-  const reset = ()=>{
-    if(!confirm("Reset all progress?")) return;
-    setKnown(new Set()); setReview(new Set());
-    lsSet("fr-known","[]"); lsSet("fr-review","[]");
-  };
-
-  const speak = useCallback(()=>{
-    if(!window.speechSynthesis) return;
+  const speak=useCallback(()=>{
+    if(!window.speechSynthesis)return;
     window.speechSynthesis.cancel();
-    const u=new SpeechSynthesisUtterance(card.fr);
-    u.lang="fr-FR"; u.rate=0.85;
-    setSpeaking(true);
-    u.onend=()=>setSpeaking(false);
-    u.onerror=()=>setSpeaking(false);
+    const u=new SpeechSynthesisUtterance(card.fr);u.lang="fr-FR";u.rate=0.85;
+    setSpk(true);u.onend=()=>setSpk(false);u.onerror=()=>setSpk(false);
     window.speechSynthesis.speak(u);
   },[card]);
 
-  const addWord = ()=>{
-    if(!newFr.trim()||!newEn.trim()){setAddMsg("⚠️ French and English are required!");return}
-    const word={fr:newFr.trim(),pr:newPr.trim(),en:newEn.trim(),t:newWordTopic||"My Words"};
-    const updated=[...cards,word];
-    setCards(updated);
+  const addWord=()=>{
+    if(!nFr.trim()||!nEn.trim()){setMsg("⚠️ French & English required!");return}
+    const w={fr:nFr.trim(),pr:nPr.trim(),en:nEn.trim(),t:nT||"My Words"};
+    const updated=[...cards,w];setCards(updated);
     setDeck(mkDeck(topic,skip,known,updated));
-    const saved=JSON.parse(ls("fr-custom-words","[]"));
-    lsSet("fr-custom-words",JSON.stringify([...saved,word]));
-    setNewFr(""); setNewPr(""); setNewEn("");
-    setAddMsg("✅ Word added!");
-    setTimeout(()=>setAddMsg(""),2000);
+    const saved=lsj("fr-words",[]);lss("fr-words",[...saved,w]);
+    setNFr("");setNPr("");setNEn("");setMsg("✅ Added!");setTimeout(()=>setMsg(""),2000);
   };
 
-  const fetchSheet = async(url)=>{
-    setSheetSt("loading"); setSheetErr("");
+  const fetchSheet=async(url)=>{
+    setSSt("loading");setSErr("");
     try{
-      if(!url.includes("google.com/spreadsheets")) throw new Error("Invalid URL.");
-      let csvUrl=url.includes("pub?output=csv")?url:(()=>{
+      if(!url.includes("google.com"))throw new Error("Invalid URL");
+      let csv=url.includes("pub?output=csv")?url:(()=>{
         const m=url.match(/\/d\/e\/([\w-]+)/)||url.match(/\/d\/([\w-]+)/);
-        if(!m) throw new Error("Could not read sheet ID.");
-        return url.includes("/d/e/")
-          ?`https://docs.google.com/spreadsheets/d/e/${m[1]}/pub?output=csv`
-          :`https://docs.google.com/spreadsheets/d/${m[1]}/pub?output=csv`;
+        if(!m)throw new Error("Cannot read sheet ID");
+        return url.includes("/d/e/")?`https://docs.google.com/spreadsheets/d/e/${m[1]}/pub?output=csv`:`https://docs.google.com/spreadsheets/d/${m[1]}/pub?output=csv`;
       })();
       let text=null;
-      for(const proxy of [csvUrl,`https://api.allorigins.win/raw?url=${encodeURIComponent(csvUrl)}`,`https://corsproxy.io/?${encodeURIComponent(csvUrl)}`]){
-        try{const r=await fetch(proxy);if(r.ok){text=await r.text();break}}catch(e){}
+      for(const p of[csv,`https://api.allorigins.win/raw?url=${encodeURIComponent(csv)}`,`https://corsproxy.io/?${encodeURIComponent(csv)}`]){
+        try{const r=await fetch(p);if(r.ok){text=await r.text();break}}catch(e){}
       }
-      if(!text) throw new Error("Could not connect. Make sure sheet is published: File → Share → Publish to web → CSV.");
-      const lines=text.trim().split("\n").slice(1);
-      const newCards=lines.map(line=>{
-        const cols=(line.match(/(".*?"|[^,]+)(?=,|$)/g)||[]).map(c=>c.replace(/^"|"$/g,"").trim());
-        return{fr:cols[0]||"",pr:cols[1]||"",en:cols[2]||"",t:cols[3]||"My Words"};
-      }).filter(c=>c.fr&&c.en);
-      if(!newCards.length) throw new Error("No cards found. Check columns: French, Pronunciation, English, Topic");
-      const combined=[...BASE,...newCards];
-      setCards(combined); setDeck(mkDeck(topic,skip,known,combined));
-      setIdx(0); setFlip(false); setSheetSt("success");
-      lsSet("fr-sheet-url",url);
-    }catch(e){setSheetSt("error");setSheetErr(e.message)}
+      if(!text)throw new Error("Could not connect. Publish sheet: File → Share → Publish to web → CSV");
+      const rows=text.trim().split("\n").slice(1);
+      const nc=rows.map(row=>{const c=(row.match(/(".*?"|[^,]+)(?=,|$)/g)||[]).map(x=>x.replace(/^"|"$/g,"").trim());return{fr:c[0]||"",pr:c[1]||"",en:c[2]||"",t:c[3]||"My Words"}}).filter(c=>c.fr&&c.en);
+      if(!nc.length)throw new Error("No cards found. Check columns: French, Pronunciation, English, Topic");
+      const combined=[...BASE,...nc];setCards(combined);setDeck(mkDeck(topic,skip,known,combined));setIdx(0);setFlip(false);setSSt("success");
+      localStorage.setItem("fr-sheet-url",url);
+    }catch(e){setSSt("error");setSErr(e.message)}
   };
 
-  const saveCustomTopics = (t)=>{setCustomTopics(t);lsSet("fr-custom-topics",JSON.stringify(t))};
-  const addTopic = ()=>{const n=newTopicName.trim();if(!n)return;saveCustomTopics([...customTopics,n]);setNewTopicName("")};
-  const renameTopic = (old,nw)=>{
+  const saveTopics=(t)=>{setCustomTopics(t);lss("fr-topics",t)};
+  const addTopic=()=>{const n=newTN.trim();if(!n||allTopics.includes(n))return;saveTopics([...customTopics,n]);setNewTN("")};
+  const renameTopic=(old,nw)=>{
     const tr=nw.trim();if(!tr||tr===old){setEditT(null);return}
-    setCards(cs=>cs.map(c=>c.t===old?{...c,t:tr}:c));
-    saveCustomTopics(customTopics.map(t=>t===old?tr:t));
-    if(topic===old) setTopic(tr);
-    setEditT(null);
+    const uc=cards.map(c=>c.t===old?{...c,t:tr}:c);setCards(uc);setDeck(mkDeck(topic,skip,known,uc));
+    saveTopics(customTopics.map(t=>t===old?tr:t));
+    if(topic===old)setTopic(tr);setEditT(null);
   };
-  const deleteTopic = (name)=>{
-    if(!confirm(`Delete "${name}"? Cards will move to My Words.`)) return;
-    const updated = cards.map(c=>c.t===name?{...c,t:"My Words"}:c);
-    setCards(updated);
-    setDeck(mkDeck(topic,skip,known,updated));
-    const updatedCustom = customTopics.filter(t=>t!==name);
-    saveCustomTopics(updatedCustom);
-    if(topic===name) changeTopic("All");
+  const deleteTopic=(name)=>{
+    if(!confirm(`Delete "${name}"? Cards will move to My Words.`))return;
+    const uc=cards.map(c=>c.t===name?{...c,t:"My Words"}:c);setCards(uc);setDeck(mkDeck(topic,skip,known,uc));
+    saveTopics(customTopics.filter(t=>t!==name));
+    if(topic===name)chgTopic("All");
   };
 
-  const allTopics = ["All", ...Object.keys(COLORS).filter(k=>k!=="All"), ...customTopics.filter(t=>!Object.keys(COLORS).includes(t))];
-  const topicList = [...Object.keys(COLORS).filter(k=>k!=="All"), ...customTopics.filter(t=>!Object.keys(COLORS).includes(t))];
-  const topicDropdown = [...topicList, "My Words"].filter((v,i,a)=>a.indexOf(v)===i);
+  const togPanel=(p)=>setPanel(prev=>prev===p?null:p);
 
-  return h("div",{id:"root"},
-
+  return e("div",null,
     // Top bar
-    h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:".75rem",flexWrap:"wrap",gap:6}},
-      h("div",{style:{fontSize:12,color:"#666"}},
-        h("span",{style:{color:"#2aae6e",fontWeight:500}},known.size+" ✓"),
-        " / ",h("span",{style:{color:"#e8a82a",fontWeight:500}},review.size+" ↺"),
-        " / ",h("span",{style:{fontWeight:500}},cards.length+" total")
+    e("div",{className:"topbar"},
+      e("div",{className:"stat"},
+        e("span",{style:{color:"#2aae6e",fontWeight:500}},known.size+" ✓"),
+        " / ",e("span",{style:{color:"#e8a82a",fontWeight:500}},review.size+" ↺"),
+        " / ",e("span",{style:{fontWeight:500}},cards.length+" total")
       ),
-      h("div",{style:{display:"flex",gap:6,flexWrap:"wrap"}},
-        h("button",{className:"pill"+(showAddWord?" active":""),style:showAddWord?{background:color,border:"none"}:{},onClick:()=>{setShowAddWord(p=>!p);setShowSheet(false);setShowTopics(false)}},"➕ Add Word"),
-        h("button",{className:"pill",style:{background:sheetSt==="success"?"#16a08522":"#fff",color:sheetSt==="success"?"#16a085":"#666"},onClick:()=>{setShowSheet(p=>!p);setShowAddWord(false);setShowTopics(false)}},"📊 "+(sheetSt==="success"?"Connected":"Connect Sheet")),
-        h("button",{className:"pill",style:{background:color,border:"none",color:"#fff"},onClick:save},"Save"),
-        h("button",{className:"pill",onClick:reset},"Reset"),
+      e("div",{className:"btns"},
+        e("button",{className:"btn"+(panel==="add"?" primary":""),style:panel==="add"?{background:color,border:"none",color:"#fff"}:{},onClick:()=>togPanel("add")},"➕ Add Word"),
+        e("button",{className:"btn",style:{background:sSt==="success"?"#e8f9f0":"#fff",color:sSt==="success"?"#16a085":"#666"},onClick:()=>togPanel("sheet")},"📊 "+(sSt==="success"?"Connected":"Sheet")),
+        e("button",{className:"btn primary",style:{background:color,border:"none",color:"#fff"},onClick:save},"Save"),
+        e("button",{className:"btn",onClick:reset},"Reset"),
       )
     ),
 
-    // Add Word Panel
-    showAddWord && h("div",{className:"panel"},
-      h("div",{className:"panel-title"},
-        "➕ Add New Word",
-        h("button",{className:"close-btn",onClick:()=>setShowAddWord(false)},"✕ Close")
-      ),
-      h("div",{className:"field"},h("div",{className:"field-label"},"🇫🇷 French *"),h("input",{value:newFr,onChange:e=>setNewFr(e.target.value),placeholder:"e.g. la mer"})),
-      h("div",{className:"field"},h("div",{className:"field-label"},"🔊 Pronunciation (optional)"),h("input",{value:newPr,onChange:e=>setNewPr(e.target.value),placeholder:"e.g. lah MEHR"})),
-      h("div",{className:"field"},h("div",{className:"field-label"},"🇬🇧 English *"),h("input",{value:newEn,onChange:e=>setNewEn(e.target.value),placeholder:"e.g. the sea"})),
-      h("div",{className:"field"},
-        h("div",{className:"field-label"},"📁 Topic"),
-        h("select",{value:newWordTopic,onChange:e=>setNewWordTopic(e.target.value)},
-          topicDropdown.map(t=>h("option",{key:t,value:t},t))
+    // Add Word panel
+    panel==="add"&&e("div",{className:"panel"},
+      e("div",{className:"panel-head"},"➕ Add New Word",e("button",{className:"close",onClick:()=>setPanel(null)},"✕ Close")),
+      e("div",{className:"field"},e("div",{className:"label"},"🇫🇷 French *"),e("input",{value:nFr,onChange:ev=>setNFr(ev.target.value),placeholder:"e.g. la mer"})),
+      e("div",{className:"field"},e("div",{className:"label"},"🔊 Pronunciation (optional)"),e("input",{value:nPr,onChange:ev=>setNPr(ev.target.value),placeholder:"e.g. lah MEHR"})),
+      e("div",{className:"field"},e("div",{className:"label"},"🇬🇧 English *"),e("input",{value:nEn,onChange:ev=>setNEn(ev.target.value),placeholder:"e.g. the sea"})),
+      e("div",{className:"field"},
+        e("div",{className:"label"},"📁 Topic"),
+        e("select",{value:nT,onChange:ev=>setNT(ev.target.value)},
+          allTopics.filter(t=>t!=="All").map(t=>e("option",{key:t,value:t},t))
         )
       ),
-      h("button",{onClick:addWord,style:{width:"100%",padding:"10px",borderRadius:12,border:"none",background:color,color:"#fff",fontSize:14,fontWeight:500}},"➕ Add Card"),
-      addMsg && h("div",{style:{marginTop:8,fontSize:13,textAlign:"center",color:addMsg.includes("✅")?"#2aae6e":"#e85a2a"}},addMsg)
+      e("button",{onClick:addWord,style:{width:"100%",padding:"10px",borderRadius:12,border:"none",background:color,color:"#fff",fontSize:14,fontWeight:500}},"➕ Add Card"),
+      msg&&e("div",{style:{marginTop:8,fontSize:13,textAlign:"center",color:msg.includes("✅")?"#2aae6e":"#e85a2a"}},msg)
     ),
 
-    // Sheet Panel
-    showSheet && h("div",{className:"panel"},
-      h("div",{className:"panel-title"},
-        "📊 Connect Google Sheet",
-        h("button",{className:"close-btn",onClick:()=>setShowSheet(false)},"✕ Close")
-      ),
-      h("p",{style:{fontSize:12,color:"#666",lineHeight:1.7,marginBottom:10}},
-        "1. Create sheet: French | Pronunciation | English | Topic",h("br"),
-        "2. File → Share → Publish to web → CSV → Publish",h("br"),
+    // Sheet panel
+    panel==="sheet"&&e("div",{className:"panel"},
+      e("div",{className:"panel-head"},"📊 Connect Google Sheet",e("button",{className:"close",onClick:()=>setPanel(null)},"✕ Close")),
+      e("p",{style:{fontSize:12,color:"#777",lineHeight:1.7,marginBottom:10}},
+        "1. Sheet columns: French | Pronunciation | English | Topic",e("br"),
+        "2. File → Share → Publish to web → CSV → Publish",e("br"),
         "3. Paste the published link below"
       ),
-      h("div",{style:{display:"flex",gap:8}},
-        h("input",{value:sheetUrl,onChange:e=>setSheetUrl(e.target.value),placeholder:"https://docs.google.com/spreadsheets/d/...",style:{flex:1}}),
-        h("button",{onClick:()=>fetchSheet(sheetUrl),disabled:!sheetUrl||sheetSt==="loading",style:{padding:"6px 14px",borderRadius:8,border:"none",background:color,color:"#fff",fontWeight:500,opacity:!sheetUrl||sheetSt==="loading"?0.5:1}},sheetSt==="loading"?"Loading...":"Load")
+      e("div",{style:{display:"flex",gap:8,marginBottom:8}},
+        e("input",{value:sUrl,onChange:ev=>setSUrl(ev.target.value),placeholder:"https://docs.google.com/spreadsheets/d/...",style:{flex:1}}),
+        e("button",{onClick:()=>fetchSheet(sUrl),disabled:!sUrl||sSt==="loading",style:{padding:"7px 14px",borderRadius:8,border:"none",background:color,color:"#fff",fontWeight:500,whiteSpace:"nowrap",opacity:!sUrl||sSt==="loading"?0.5:1}},sSt==="loading"?"...":"Load")
       ),
-      sheetSt==="success"&&h("div",{style:{fontSize:12,color:"#16a085",marginTop:8}},"✅ Sheet loaded!"),
-      sheetSt==="error"&&h("div",{style:{fontSize:12,color:"#e85a2a",marginTop:8}},"⚠️ "+sheetErr),
+      sSt==="success"&&e("div",{style:{fontSize:12,color:"#16a085"}},"✅ Sheet loaded!"),
+      sSt==="error"&&e("div",{style:{fontSize:12,color:"#e85a2a"}},"⚠️ "+sErr)
     ),
 
-    // Topic header
-    h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}},
-      h("div",{style:{fontSize:12,color:"#666"}},"topic"),
-      h("button",{className:"pill"+(showTopics?" active":""),style:showTopics?{background:color,border:"none",color:"#fff"}:{},onClick:()=>{setShowTopics(p=>!p);setShowAddWord(false);setShowSheet(false)}},"⚙️ Manage Topics")
+    // Topic header + manage button
+    e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}},
+      e("div",{style:{fontSize:12,color:"#888"}},"topic"),
+      e("button",{className:"btn"+(panel==="topics"?" primary":""),style:panel==="topics"?{background:color,border:"none",color:"#fff"}:{},onClick:()=>togPanel("topics")},"⚙️ Manage")
     ),
 
-    // Topic pills — show ALL topics including custom ones
-    h("div",{style:{display:"flex",flexWrap:"wrap",gap:6,marginBottom:".75rem"}},
-      allTopics.map(t=>
-        h("button",{key:t,className:"topic-btn"+(topic===t?" active":""),style:topic===t?{background:COLORS[t]||"#2a85e8"}:{},onClick:()=>changeTopic(t)},t)
-      )
+    // Topic pills
+    e("div",{className:"topic-pills"},
+      allTopics.map(t=>e("button",{key:t,className:"tp"+(topic===t?" on":""),style:topic===t?{background:COLORS[t]||"#2a85e8"}:{},onClick:()=>chgTopic(t)},t))
     ),
 
-    // Topic Manager Panel
-    showTopics && h("div",{className:"panel"},
-      h("div",{className:"panel-title"},
-        "⚙️ Manage Topics",
-        h("button",{className:"close-btn",onClick:()=>setShowTopics(false)},"✕ Close")
-      ),
-      topicList.map(t=>
-        h("div",{key:t,className:"topic-row-item"},
-          editT===t
-            ? h(React.Fragment,null,
-                h("input",{value:editName,onChange:e=>setEditName(e.target.value),onKeyDown:e=>e.key==="Enter"&&renameTopic(t,editName),autoFocus:true,style:{flex:1}}),
-                h("button",{onClick:()=>renameTopic(t,editName),style:{padding:"4px 10px",borderRadius:8,border:"none",background:color,color:"#fff"}},"✓"),
-                h("button",{onClick:()=>setEditT(null),style:{padding:"4px 10px",borderRadius:8,border:"0.5px solid #ddd",background:"#fff",color:"#666"}},"✕")
-              )
-            : h(React.Fragment,null,
-                h("span",null,t),
-                h("button",{className:"icon-btn",onClick:()=>{setEditT(t);setEditName(t)}},"✏️"),
-                h("button",{className:"icon-btn",style:{color:"#e85a2a"},onClick:()=>deleteTopic(t)},"🗑️")
-              )
-        )
-      ),
-      h("div",{style:{display:"flex",gap:8,marginTop:10}},
-        h("input",{value:newTopicName,onChange:e=>setNewTopicName(e.target.value),onKeyDown:e=>e.key==="Enter"&&addTopic(),placeholder:"New topic name...",style:{flex:1}}),
-        h("button",{onClick:addTopic,disabled:!newTopicName.trim(),style:{padding:"6px 14px",borderRadius:8,border:"none",background:color,color:"#fff",opacity:newTopicName.trim()?1:0.5}},"➕ Add")
+    // Topics manager panel
+    panel==="topics"&&e("div",{className:"panel"},
+      e("div",{className:"panel-head"},"⚙️ Manage Topics",e("button",{className:"close",onClick:()=>setPanel(null)},"✕ Close")),
+      allManage.map(t=>e("div",{key:t,className:"trow"},
+        editT===t
+          ?e(React.Fragment,null,
+              e("input",{value:editN,onChange:ev=>setEditN(ev.target.value),onKeyDown:ev=>ev.key==="Enter"&&renameTopic(t,editN),autoFocus:true,style:{flex:1}}),
+              e("button",{onClick:()=>renameTopic(t,editN),style:{padding:"4px 10px",borderRadius:6,border:"none",background:color,color:"#fff"}},"✓"),
+              e("button",{onClick:()=>setEditT(null),style:{padding:"4px 10px",borderRadius:6,border:"1px solid #ddd",background:"#fff",color:"#666"}},"✕")
+            )
+          :e(React.Fragment,null,
+              e("span",null,t),
+              e("button",{className:"ib",onClick:()=>{setEditT(t);setEditN(t)}},"✏️"),
+              e("button",{className:"ib",style:{color:"#e85a2a"},onClick:()=>deleteTopic(t)},"🗑️")
+            )
+      )),
+      e("div",{style:{display:"flex",gap:8,marginTop:10}},
+        e("input",{value:newTN,onChange:ev=>setNewTN(ev.target.value),onKeyDown:ev=>ev.key==="Enter"&&addTopic(),placeholder:"New topic name...",style:{flex:1}}),
+        e("button",{onClick:addTopic,disabled:!newTN.trim(),style:{padding:"7px 14px",borderRadius:8,border:"none",background:color,color:"#fff",opacity:newTN.trim()?1:0.5}},"➕ Add")
       )
     ),
 
     // Skip toggle
-    h("div",{className:"toggle-wrap",onClick:toggleSkip},
-      h("div",{className:"toggle"+(skip?" on":""),style:skip?{background:color}:{}},h("div",{className:"knob"})),
-      h("span",{style:{fontSize:13,color:"#666"}},
+    e("div",{className:"skip",onClick:togSkip},
+      e("div",{className:"tog"+(skip?" on":""),style:skip?{background:color}:{}},e("div",{className:"knob"})),
+      e("span",{style:{fontSize:13,color:"#666"}},
         "Skip words I know",
-        skip&&h("span",{style:{color,fontWeight:500,marginLeft:6}},"("+deck.length+" remaining)")
+        skip&&e("span",{style:{color,fontWeight:500,marginLeft:6}},"("+deck.length+" left)")
       )
     ),
 
-    // Card counter
-    h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:".5rem"}},
-      h("span",{style:{fontSize:13,color:"#666"}},"Card "+(idx+1)+" of "+deck.length),
-      h("div",{style:{display:"flex",gap:8}},
-        h("span",{className:"badge bk"},known.size+" ✓"),
-        h("span",{className:"badge br"},review.size+" ↺")
-      )
+    // Counter
+    e("div",{className:"ctr"},
+      e("span",null,"Card "+(idx+1)+" of "+deck.length),
+      e("div",{className:"badges"},e("span",{className:"bk"},known.size+" ✓"),e("span",{className:"br"},review.size+" ↺"))
     ),
 
-    // Progress bar
-    h("div",{className:"prog-bar"},h("div",{className:"prog-fill",style:{width:prog+"%",background:color}})),
+    // Progress
+    e("div",{className:"prog"},e("div",{className:"progfill",style:{width:prog+"%",background:color}})),
 
     // Card
-    h("div",{className:"card-box",style:{border:`0.5px solid ${isK?"#2aae6e":isR?"#e8a82a":"#eee"}`},onClick:()=>setFlip(f=>!f)},
-      h("span",{style:{position:"absolute",top:10,left:14,fontSize:11,padding:"2px 8px",borderRadius:999,background:(COLORS[card.t]||"#2a85e8")+"22",color:COLORS[card.t]||"#2a85e8"}},card.t),
-      h("span",{style:{position:"absolute",top:14,right:16,fontSize:11,color:"#aaa"}},flip?"meaning":"tap to reveal"),
+    e("div",{className:"card",style:{border:`1px solid ${isK?"#2aae6e":isR?"#e8a82a":"#eee"}`},onClick:()=>setFlip(f=>!f)},
+      e("span",{className:"tag",style:{background:(COLORS[card.t]||"#2a85e8")+"22",color:COLORS[card.t]||"#2a85e8"}},card.t),
+      e("span",{className:"hint"},flip?"meaning":"tap to reveal"),
       !flip
-        ? h(React.Fragment,null,
-            h("div",{style:{fontSize:36,fontWeight:500,textAlign:"center",lineHeight:1.2}},card.fr),
-            h("div",{style:{fontSize:14,color:"#888",fontStyle:"italic"}},card.pr)
-          )
-        : h(React.Fragment,null,
-            h("div",{style:{fontSize:14,color:"#888"}},card.fr),
-            h("div",{style:{fontSize:30,fontWeight:500,textAlign:"center",lineHeight:1.2}},card.en)
-          )
+        ?e(React.Fragment,null,e("div",{className:"fr"},card.fr),e("div",{className:"pr"},card.pr))
+        :e(React.Fragment,null,e("div",{className:"en-sm"},card.fr),e("div",{className:"en"},card.en))
     ),
 
     // Speaker
-    h("div",{style:{display:"flex",justifyContent:"center",marginTop:14}},
-      h("button",{onClick:speak,style:{padding:"8px 24px",borderRadius:999,border:"none",background:speaking?"#c46a1a":"#e8852a",color:"#fff",fontSize:20,transform:speaking?"scale(0.95)":"scale(1)"}},"🔊")
+    e("div",{className:"speak-row"},
+      e("button",{className:"speak"+(spk?" on":""),onClick:speak},"🔊")
     ),
 
     // Mark buttons
-    h("div",{style:{display:"flex",gap:10,marginTop:12}},
-      h("button",{className:"mark-btn"+(isK?" k":""),onClick:()=>mark(isK?null:"k")},"✓"),
-      h("button",{className:"mark-btn"+(isR?" r":""),onClick:()=>mark(isR?null:"r")},"↺")
+    e("div",{className:"marks"},
+      e("button",{className:"mk"+(isK?" k":""),onClick:()=>mark(isK?null:"k")},"✓"),
+      e("button",{className:"mk"+(isR?" r":""),onClick:()=>mark(isR?null:"r")},"↺")
     ),
 
     // Nav
-    h("div",{style:{display:"flex",gap:10,marginTop:10}},
-      h("button",{className:"nav-btn",onClick:()=>go(-1)},"←"),
-      h("button",{style:{padding:"8px 20px",fontSize:18,borderRadius:12,border:"0.5px solid #ddd",background:"#fff",color:"#888"},onClick:()=>{setDeck(d=>shuffle(d));setIdx(0);setFlip(false)}},"⇄"),
-      h("button",{className:"nav-btn",onClick:()=>go(1)},"→")
+    e("div",{className:"navs"},
+      e("button",{className:"nv",onClick:()=>go(-1)},"←"),
+      e("button",{className:"shuf",onClick:()=>{setDeck(d=>shuf(d));setIdx(0);setFlip(false)}},"⇄"),
+      e("button",{className:"nv",onClick:()=>go(1)},"→")
     )
   );
 }
 
-ReactDOM.render(h(App),document.getElementById("root"));
+ReactDOM.render(e(App),document.getElementById("app"));
 </script>
 </body>
 </html>
