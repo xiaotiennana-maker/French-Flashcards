@@ -18,10 +18,9 @@
     .stat{font-size:12px;color:#666}
     .btns{display:flex;gap:6px;flex-wrap:wrap}
     .btn{font-size:12px;padding:5px 12px;border-radius:999px;border:1px solid #ddd;background:#fff;color:#666;font-weight:500}
-    .btn.primary{border:none;color:#fff}
     .panel{background:#f8f8f8;border:1px solid #eee;border-radius:16px;padding:14px;margin-bottom:12px}
     .panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;font-size:13px;font-weight:600}
-    .close{font-size:12px;padding:3px 10px;border-radius:999px;border:1px solid #ddd;background:#fff;color:#666}
+    .close-btn{font-size:12px;padding:3px 10px;border-radius:999px;border:1px solid #ddd;background:#fff;color:#666}
     .field{margin-bottom:10px}
     .label{font-size:11px;color:#888;margin-bottom:4px}
     .topic-pills{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
@@ -58,6 +57,7 @@
     .trow{display:flex;align-items:center;gap:6px;margin-bottom:6px;background:#fff;border:1px solid #eee;border-radius:8px;padding:5px 8px}
     .trow span{flex:1;font-size:13px}
     .ib{padding:4px 8px;border-radius:6px;border:1px solid #ddd;background:#fff;font-size:13px}
+    .empty{text-align:center;padding:40px 20px;color:#aaa;font-size:14px}
   </style>
 </head>
 <body>
@@ -65,9 +65,10 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script>
-const {useState,useCallback,createElement:e} = React;
+const {useState,useCallback,createElement:h} = React;
 
 const COLORS={"All":"#2a85e8","Everyday":"#e85a2a","Months & Days":"#2aae6e","Numbers":"#9b2ae8","Classroom":"#e8a82a","Adjectives":"#e82a7a","Verbs":"#2ab8e8","Family & Home":"#e86a2a","City & Transport":"#5a8ae8","My Words":"#16a085"};
+const getColor=t=>COLORS[t]||"#2a85e8";
 
 const BASE=[
   {fr:"bonjour",pr:"bohn-ZHOOR",en:"hello / good day",t:"Everyday"},
@@ -166,263 +167,312 @@ const BASE=[
   {fr:"la poste",pr:"lah POST",en:"the post office",t:"City & Transport"},
 ];
 
-const ls=(k,d="")=>{try{return localStorage.getItem(k)||d}catch(e){return d}};
-const lsj=(k,d)=>{try{return JSON.parse(ls(k,JSON.stringify(d)))}catch(e){return d}};
-const lss=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+// localStorage helpers
+const lsGet=(k,d)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}};
+const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 
 const shuf=a=>{const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]]}return b};
+
 const mkDeck=(topic,skip,known,cards)=>{
-  let f=topic==="All"?cards:cards.filter(c=>c.t===topic);
+  let f=topic==="All"?[...cards]:cards.filter(c=>c.t===topic);
   if(skip)f=f.filter(c=>!known.has(c.fr));
-  return f.length?f:(topic==="All"?cards:cards.filter(c=>c.t===topic));
+  return f;
 };
 
 function App(){
-  const [cards,setCards]=useState(()=>{const w=lsj("fr-words",[]);return w.length?[...BASE,...w]:BASE});
-  const [customTopics,setCustomTopics]=useState(()=>lsj("fr-topics",[]));
-  const [known,setKnown]=useState(()=>new Set(lsj("fr-known",[])));
-  const [review,setReview]=useState(()=>new Set(lsj("fr-review",[])));
+  // Load saved custom words and merge with BASE
+  const [cards,setCards]=useState(()=>{
+    const w=lsGet("fr-words",[]);
+    return w.length?[...BASE,...w]:[...BASE];
+  });
+  const [customTopics,setCustomTopics]=useState(()=>lsGet("fr-topics",[]));
+  const [known,setKnown]=useState(()=>new Set(lsGet("fr-known",[])));
+  const [review,setReview]=useState(()=>new Set(lsGet("fr-review",[])));
   const [topic,setTopic]=useState("All");
   const [skip,setSkip]=useState(false);
-  const [deck,setDeck]=useState(()=>mkDeck("All",false,new Set(),BASE));
+  const [deck,setDeck]=useState(()=>[...BASE]);
   const [idx,setIdx]=useState(0);
   const [flip,setFlip]=useState(false);
   const [spk,setSpk]=useState(false);
-  // panels
-  const [panel,setPanel]=useState(null); // "add"|"sheet"|"topics"|null
-  // add word
-  const [nFr,setNFr]=useState("");const [nPr,setNPr]=useState("");const [nEn,setNEn]=useState("");const [nT,setNT]=useState("Everyday");const [msg,setMsg]=useState("");
-  // sheet
-  const [sUrl,setSUrl]=useState(()=>ls("fr-sheet-url",""));const [sSt,setSSt]=useState("idle");const [sErr,setSErr]=useState("");
-  // topic manager
-  const [editT,setEditT]=useState(null);const [editN,setEditN]=useState("");const [newTN,setNewTN]=useState("");
+  const [panel,setPanel]=useState(null);
 
-  const color=COLORS[topic]||"#2a85e8";
-  const hiddenTopics=lsj("fr-hidden-topics",[]);
-  const allBuiltin=Object.keys(COLORS).filter(k=>k!=="All"&&!hiddenTopics.includes(k));
-  const allCustom=customTopics.filter(t=>!Object.keys(COLORS).includes(t)&&!hiddenTopics.includes(t));
-  const allTopics=["All",...allBuiltin,...allCustom];
-  const allManage=[...allBuiltin,...allCustom];
-  const card=deck[idx];
+  // Add word form
+  const [nFr,setNFr]=useState("");
+  const [nPr,setNPr]=useState("");
+  const [nEn,setNEn]=useState("");
+  const [nT,setNT]=useState("My Words");
+  const [addMsg,setAddMsg]=useState("");
+
+  // Sheet
+  const [sUrl,setSUrl]=useState(()=>localStorage.getItem("fr-sheet-url")||"");
+  const [sSt,setSSt]=useState("idle");
+  const [sErr,setSErr]=useState("");
+
+  // Topic manager
+  const [editT,setEditT]=useState(null);
+  const [editN,setEditN]=useState("");
+  const [newTN,setNewTN]=useState("");
+
+  const color=getColor(topic);
+
+  // All unique topics from cards + custom
+  const getTopicsFromCards=(cardList)=>[...new Set(cardList.map(c=>c.t))];
+
+  const allTopics=["All",...Object.keys(COLORS).filter(k=>k!=="All"),...customTopics.filter(t=>!COLORS[t])];
+  // Only show topic pill if it has cards
+  const visibleTopics=allTopics.filter(t=>t==="All"||cards.some(c=>c.t===t));
+  // All topics for manage panel
+  const manageTopics=[...new Set([...Object.keys(COLORS).filter(k=>k!=="All"),...customTopics,...getTopicsFromCards(cards)])];
+
+  const card=deck[idx]||{fr:"",pr:"",en:"",t:""};
   const isK=known.has(card.fr);
   const isR=review.has(card.fr);
-  const prog=Math.round(((known.size+review.size)/deck.length)*100);
+  const prog=deck.length?Math.round(((known.size+review.size)/deck.length)*100):0;
+
+  const updateDeck=(t,sk,kn,cs)=>{
+    const d=mkDeck(t,sk,kn,cs);
+    setDeck(d.length?d:mkDeck("All",sk,kn,cs));
+    if(!d.length)setTopic("All");
+    setIdx(0);setFlip(false);
+  };
+
+  const chgTopic=(t)=>{
+    const d=mkDeck(t,skip,known,cards);
+    if(d.length===0){alert(`"${t}" has no cards yet!`);return;}
+    setTopic(t);setDeck(d);setIdx(0);setFlip(false);
+  };
+
+  const togSkip=()=>{const n=!skip;setSkip(n);updateDeck(topic,n,known,cards)};
 
   const go=(d)=>{setFlip(false);setIdx(i=>(i+d+deck.length)%deck.length)};
-  const chgTopic=(t)=>{
-    const newDeck=mkDeck(t,skip,known,cards);
-    if(newDeck.length===0){alert(`No cards in "${t}" yet!`);return;}
-    setTopic(t);setDeck(newDeck);setIdx(0);setFlip(false);
-  };
-  const togSkip=()=>{const n=!skip;setSkip(n);setDeck(mkDeck(topic,n,known,cards));setIdx(0);setFlip(false)};
+
   const mark=(type)=>{
     const id=card.fr;
     setKnown(s=>{const n=new Set(s);type==="k"?n.add(id):n.delete(id);return n});
     setReview(s=>{const n=new Set(s);type==="r"?n.add(id):n.delete(id);return n});
   };
-  const save=()=>{lss("fr-known",[...known]);lss("fr-review",[...review]);alert("Saved ✓")};
-  const reset=()=>{if(!confirm("Reset all progress?"))return;setKnown(new Set());setReview(new Set());lss("fr-known",[]);lss("fr-review",[])};
+
+  const save=()=>{lsSet("fr-known",[...known]);lsSet("fr-review",[...review]);alert("Saved ✓")};
+  const reset=()=>{if(!confirm("Reset all progress?"))return;setKnown(new Set());setReview(new Set());lsSet("fr-known",[]);lsSet("fr-review",[])};
 
   const speak=useCallback(()=>{
     if(!window.speechSynthesis)return;
     window.speechSynthesis.cancel();
-    const u=new SpeechSynthesisUtterance(card.fr);u.lang="fr-FR";u.rate=0.85;
-    setSpk(true);u.onend=()=>setSpk(false);u.onerror=()=>setSpk(false);
+    const u=new SpeechSynthesisUtterance(card.fr);
+    u.lang="fr-FR";u.rate=0.85;setSpk(true);
+    u.onend=()=>setSpk(false);u.onerror=()=>setSpk(false);
     window.speechSynthesis.speak(u);
   },[card]);
 
   const addWord=()=>{
-    if(!nFr.trim()||!nEn.trim()){setMsg("⚠️ French & English required!");return}
+    if(!nFr.trim()||!nEn.trim()){setAddMsg("⚠️ French & English required!");return}
     const w={fr:nFr.trim(),pr:nPr.trim(),en:nEn.trim(),t:nT||"My Words"};
-    const updated=[...cards,w];setCards(updated);
-    setDeck(mkDeck(topic,skip,known,updated));
-    const saved=lsj("fr-words",[]);lss("fr-words",[...saved,w]);
-    setNFr("");setNPr("");setNEn("");setMsg("✅ Added!");setTimeout(()=>setMsg(""),2000);
+    const updated=[...cards,w];
+    setCards(updated);
+    updateDeck(topic,skip,known,updated);
+    const saved=lsGet("fr-words",[]);lsSet("fr-words",[...saved,w]);
+    setNFr("");setNPr("");setNEn("");
+    setAddMsg("✅ Added!");setTimeout(()=>setAddMsg(""),2000);
   };
 
   const fetchSheet=async(url)=>{
     setSSt("loading");setSErr("");
     try{
       if(!url.includes("google.com"))throw new Error("Invalid URL");
-      let csv=url.includes("pub?output=csv")?url:(()=>{
+      let csv=url;
+      if(!url.includes("pub?output=csv")){
         const m=url.match(/\/d\/e\/([\w-]+)/)||url.match(/\/d\/([\w-]+)/);
         if(!m)throw new Error("Cannot read sheet ID");
-        return url.includes("/d/e/")?`https://docs.google.com/spreadsheets/d/e/${m[1]}/pub?output=csv`:`https://docs.google.com/spreadsheets/d/${m[1]}/pub?output=csv`;
-      })();
+        csv=url.includes("/d/e/")?`https://docs.google.com/spreadsheets/d/e/${m[1]}/pub?output=csv`:`https://docs.google.com/spreadsheets/d/${m[1]}/pub?output=csv`;
+      }
       let text=null;
       for(const p of[csv,`https://api.allorigins.win/raw?url=${encodeURIComponent(csv)}`,`https://corsproxy.io/?${encodeURIComponent(csv)}`]){
         try{const r=await fetch(p);if(r.ok){text=await r.text();break}}catch(e){}
       }
-      if(!text)throw new Error("Could not connect. Publish sheet: File → Share → Publish to web → CSV");
+      if(!text)throw new Error("Could not connect. Publish: File → Share → Publish to web → CSV");
       const rows=text.trim().split("\n").slice(1);
-      const nc=rows.map(row=>{const c=(row.match(/(".*?"|[^,]+)(?=,|$)/g)||[]).map(x=>x.replace(/^"|"$/g,"").trim());return{fr:c[0]||"",pr:c[1]||"",en:c[2]||"",t:c[3]||"My Words"}}).filter(c=>c.fr&&c.en);
-      if(!nc.length)throw new Error("No cards found. Check columns: French, Pronunciation, English, Topic");
-      const combined=[...BASE,...nc];setCards(combined);setDeck(mkDeck(topic,skip,known,combined));setIdx(0);setFlip(false);setSSt("success");
+      const nc=rows.map(row=>{
+        const c=(row.match(/(".*?"|[^,]+)(?=,|$)/g)||[]).map(x=>x.replace(/^"|"$/g,"").trim());
+        return{fr:c[0]||"",pr:c[1]||"",en:c[2]||"",t:c[3]||"My Words"};
+      }).filter(c=>c.fr&&c.en);
+      if(!nc.length)throw new Error("No cards found. Columns: French, Pronunciation, English, Topic");
+      const combined=[...BASE,...nc];
+      setCards(combined);
+      updateDeck(topic,skip,known,combined);
+      setSSt("success");
       localStorage.setItem("fr-sheet-url",url);
     }catch(e){setSSt("error");setSErr(e.message)}
   };
 
-  const saveTopics=(t)=>{setCustomTopics(t);lss("fr-topics",t)};
-  const addTopic=()=>{const n=newTN.trim();if(!n||allTopics.includes(n))return;saveTopics([...customTopics,n]);setNewTN("")};
+  const saveCustomTopics=(t)=>{setCustomTopics(t);lsSet("fr-topics",t)};
+
+  const addTopic=()=>{
+    const n=newTN.trim();
+    if(!n||manageTopics.includes(n))return;
+    saveCustomTopics([...customTopics,n]);
+    setNewTN("");
+  };
+
   const renameTopic=(old,nw)=>{
     const tr=nw.trim();if(!tr||tr===old){setEditT(null);return}
-    const uc=cards.map(c=>c.t===old?{...c,t:tr}:c);setCards(uc);setDeck(mkDeck(topic,skip,known,uc));
-    saveTopics(customTopics.map(t=>t===old?tr:t));
-    if(topic===old)setTopic(tr);setEditT(null);
+    const uc=cards.map(c=>c.t===old?{...c,t:tr}:c);
+    setCards(uc);
+    updateDeck(topic===old?tr:topic,skip,known,uc);
+    saveCustomTopics(customTopics.map(t=>t===old?tr:t));
+    if(topic===old)setTopic(tr);
+    setEditT(null);
   };
+
   const deleteTopic=(name)=>{
-    if(!confirm(`Delete "${name}"? Cards will move to My Words.`))return;
-    // Move all cards with this topic to My Words
+    if(!confirm(`Delete "${name}"? Cards move to My Words.`))return;
     const uc=cards.map(c=>c.t===name?{...c,t:"My Words"}:c);
     setCards(uc);
-    setDeck(mkDeck(topic==="All"?"All":topic===name?"All":topic,skip,known,uc));
-    // Remove from custom topics if it's custom
-    const updatedCustom=customTopics.filter(t=>t!==name);
-    setCustomTopics(updatedCustom);
-    lss("fr-topics",updatedCustom);
-    // Also remove from built-in display by adding to a "hidden" list
-    const hidden=lsj("fr-hidden-topics",[]);
-    if(!hidden.includes(name)){
-      const updatedHidden=[...hidden,name];
-      lss("fr-hidden-topics",updatedHidden);
-    }
-    if(topic===name)setTopic("All");
+    const newTopic=topic===name?"All":topic;
+    setTopic(newTopic);
+    updateDeck(newTopic,skip,known,uc);
+    saveCustomTopics(customTopics.filter(t=>t!==name));
   };
 
   const togPanel=(p)=>setPanel(prev=>prev===p?null:p);
 
-  return e("div",null,
+  return h("div",null,
     // Top bar
-    e("div",{className:"topbar"},
-      e("div",{className:"stat"},
-        e("span",{style:{color:"#2aae6e",fontWeight:500}},known.size+" ✓"),
-        " / ",e("span",{style:{color:"#e8a82a",fontWeight:500}},review.size+" ↺"),
-        " / ",e("span",{style:{fontWeight:500}},cards.length+" total")
+    h("div",{className:"topbar"},
+      h("div",{className:"stat"},
+        h("span",{style:{color:"#2aae6e",fontWeight:500}},known.size+" ✓"),
+        " / ",h("span",{style:{color:"#e8a82a",fontWeight:500}},review.size+" ↺"),
+        " / ",h("span",{style:{fontWeight:500}},cards.length+" total")
       ),
-      e("div",{className:"btns"},
-        e("button",{className:"btn"+(panel==="add"?" primary":""),style:panel==="add"?{background:color,border:"none",color:"#fff"}:{},onClick:()=>togPanel("add")},"➕ Add Word"),
-        e("button",{className:"btn",style:{background:sSt==="success"?"#e8f9f0":"#fff",color:sSt==="success"?"#16a085":"#666"},onClick:()=>togPanel("sheet")},"📊 "+(sSt==="success"?"Connected":"Sheet")),
-        e("button",{className:"btn primary",style:{background:color,border:"none",color:"#fff"},onClick:save},"Save"),
-        e("button",{className:"btn",onClick:reset},"Reset"),
+      h("div",{className:"btns"},
+        h("button",{className:"btn",style:panel==="add"?{background:color,border:"none",color:"#fff"}:{},onClick:()=>togPanel("add")},"➕ Add Word"),
+        h("button",{className:"btn",style:sSt==="success"?{background:"#e8f9f0",color:"#16a085"}:{},onClick:()=>togPanel("sheet")},"📊 "+(sSt==="success"?"Connected":"Sheet")),
+        h("button",{className:"btn",style:{background:color,border:"none",color:"#fff"},onClick:save},"Save"),
+        h("button",{className:"btn",onClick:reset},"Reset"),
       )
     ),
 
     // Add Word panel
-    panel==="add"&&e("div",{className:"panel"},
-      e("div",{className:"panel-head"},"➕ Add New Word",e("button",{className:"close",onClick:()=>setPanel(null)},"✕ Close")),
-      e("div",{className:"field"},e("div",{className:"label"},"🇫🇷 French *"),e("input",{value:nFr,onChange:ev=>setNFr(ev.target.value),placeholder:"e.g. la mer"})),
-      e("div",{className:"field"},e("div",{className:"label"},"🔊 Pronunciation (optional)"),e("input",{value:nPr,onChange:ev=>setNPr(ev.target.value),placeholder:"e.g. lah MEHR"})),
-      e("div",{className:"field"},e("div",{className:"label"},"🇬🇧 English *"),e("input",{value:nEn,onChange:ev=>setNEn(ev.target.value),placeholder:"e.g. the sea"})),
-      e("div",{className:"field"},
-        e("div",{className:"label"},"📁 Topic"),
-        e("select",{value:nT,onChange:ev=>setNT(ev.target.value)},
-          allTopics.filter(t=>t!=="All").map(t=>e("option",{key:t,value:t},t))
+    panel==="add"&&h("div",{className:"panel"},
+      h("div",{className:"panel-head"},"➕ Add New Word",
+        h("button",{className:"close-btn",onClick:()=>setPanel(null)},"✕ Close")
+      ),
+      h("div",{className:"field"},h("div",{className:"label"},"🇫🇷 French *"),h("input",{value:nFr,onChange:ev=>setNFr(ev.target.value),placeholder:"e.g. la mer"})),
+      h("div",{className:"field"},h("div",{className:"label"},"🔊 Pronunciation (optional)"),h("input",{value:nPr,onChange:ev=>setNPr(ev.target.value),placeholder:"e.g. lah MEHR"})),
+      h("div",{className:"field"},h("div",{className:"label"},"🇬🇧 English *"),h("input",{value:nEn,onChange:ev=>setNEn(ev.target.value),placeholder:"e.g. the sea"})),
+      h("div",{className:"field"},
+        h("div",{className:"label"},"📁 Topic"),
+        h("select",{value:nT,onChange:ev=>setNT(ev.target.value)},
+          visibleTopics.filter(t=>t!=="All").map(t=>h("option",{key:t,value:t},t)),
+          h("option",{value:"My Words"},"My Words")
         )
       ),
-      e("button",{onClick:addWord,style:{width:"100%",padding:"10px",borderRadius:12,border:"none",background:color,color:"#fff",fontSize:14,fontWeight:500}},"➕ Add Card"),
-      msg&&e("div",{style:{marginTop:8,fontSize:13,textAlign:"center",color:msg.includes("✅")?"#2aae6e":"#e85a2a"}},msg)
+      h("button",{onClick:addWord,style:{width:"100%",padding:"10px",borderRadius:12,border:"none",background:color,color:"#fff",fontSize:14,fontWeight:500}},"➕ Add Card"),
+      addMsg&&h("div",{style:{marginTop:8,fontSize:13,textAlign:"center",color:addMsg.includes("✅")?"#2aae6e":"#e85a2a"}},addMsg)
     ),
 
     // Sheet panel
-    panel==="sheet"&&e("div",{className:"panel"},
-      e("div",{className:"panel-head"},"📊 Connect Google Sheet",e("button",{className:"close",onClick:()=>setPanel(null)},"✕ Close")),
-      e("p",{style:{fontSize:12,color:"#777",lineHeight:1.7,marginBottom:10}},
-        "1. Sheet columns: French | Pronunciation | English | Topic",e("br"),
-        "2. File → Share → Publish to web → CSV → Publish",e("br"),
+    panel==="sheet"&&h("div",{className:"panel"},
+      h("div",{className:"panel-head"},"📊 Connect Google Sheet",
+        h("button",{className:"close-btn",onClick:()=>setPanel(null)},"✕ Close")
+      ),
+      h("p",{style:{fontSize:12,color:"#777",lineHeight:1.7,marginBottom:10}},
+        "1. Columns: French | Pronunciation | English | Topic",h("br"),
+        "2. File → Share → Publish to web → CSV → Publish",h("br"),
         "3. Paste the published link below"
       ),
-      e("div",{style:{display:"flex",gap:8,marginBottom:8}},
-        e("input",{value:sUrl,onChange:ev=>setSUrl(ev.target.value),placeholder:"https://docs.google.com/spreadsheets/d/...",style:{flex:1}}),
-        e("button",{onClick:()=>fetchSheet(sUrl),disabled:!sUrl||sSt==="loading",style:{padding:"7px 14px",borderRadius:8,border:"none",background:color,color:"#fff",fontWeight:500,whiteSpace:"nowrap",opacity:!sUrl||sSt==="loading"?0.5:1}},sSt==="loading"?"...":"Load")
+      h("div",{style:{display:"flex",gap:8,marginBottom:8}},
+        h("input",{value:sUrl,onChange:ev=>setSUrl(ev.target.value),placeholder:"https://docs.google.com/spreadsheets/d/...",style:{flex:1}}),
+        h("button",{onClick:()=>fetchSheet(sUrl),disabled:!sUrl||sSt==="loading",style:{padding:"7px 14px",borderRadius:8,border:"none",background:color,color:"#fff",fontWeight:500,whiteSpace:"nowrap",opacity:!sUrl||sSt==="loading"?0.5:1}},sSt==="loading"?"...":"Load")
       ),
-      sSt==="success"&&e("div",{style:{fontSize:12,color:"#16a085"}},"✅ Sheet loaded!"),
-      sSt==="error"&&e("div",{style:{fontSize:12,color:"#e85a2a"}},"⚠️ "+sErr)
+      sSt==="success"&&h("div",{style:{fontSize:12,color:"#16a085"}},"✅ Sheet loaded!"),
+      sSt==="error"&&h("div",{style:{fontSize:12,color:"#e85a2a"}},"⚠️ "+sErr)
     ),
 
-    // Topic header + manage button
-    e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}},
-      e("div",{style:{fontSize:12,color:"#888"}},"topic"),
-      e("button",{className:"btn"+(panel==="topics"?" primary":""),style:panel==="topics"?{background:color,border:"none",color:"#fff"}:{},onClick:()=>togPanel("topics")},"⚙️ Manage")
+    // Topic header
+    h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}},
+      h("div",{style:{fontSize:12,color:"#888"}},"topic"),
+      h("button",{className:"btn",style:panel==="topics"?{background:color,border:"none",color:"#fff"}:{},onClick:()=>togPanel("topics")},"⚙️ Manage")
     ),
 
-    // Topic pills — only show topics that have cards, plus All
-    e("div",{className:"topic-pills"},
-      allTopics.filter(t=>{
-        if(t==="All") return true;
-        return cards.some(c=>c.t===t);
-      }).map(t=>e("button",{key:t,className:"tp"+(topic===t?" on":""),style:topic===t?{background:COLORS[t]||"#2a85e8"}:{},onClick:()=>chgTopic(t)},t))
+    // Topic pills
+    h("div",{className:"topic-pills"},
+      visibleTopics.map(t=>h("button",{key:t,className:"tp"+(topic===t?" on":""),style:topic===t?{background:getColor(t)}:{},onClick:()=>chgTopic(t)},t))
     ),
 
-    // Topics manager panel
-    panel==="topics"&&e("div",{className:"panel"},
-      e("div",{className:"panel-head"},"⚙️ Manage Topics",e("button",{className:"close",onClick:()=>setPanel(null)},"✕ Close")),
-      allManage.map(t=>e("div",{key:t,className:"trow"},
+    // Topic manager panel
+    panel==="topics"&&h("div",{className:"panel"},
+      h("div",{className:"panel-head"},"⚙️ Manage Topics",
+        h("button",{className:"close-btn",onClick:()=>setPanel(null)},"✕ Close")
+      ),
+      manageTopics.map(t=>h("div",{key:t,className:"trow"},
         editT===t
-          ?e(React.Fragment,null,
-              e("input",{value:editN,onChange:ev=>setEditN(ev.target.value),onKeyDown:ev=>ev.key==="Enter"&&renameTopic(t,editN),autoFocus:true,style:{flex:1}}),
-              e("button",{onClick:()=>renameTopic(t,editN),style:{padding:"4px 10px",borderRadius:6,border:"none",background:color,color:"#fff"}},"✓"),
-              e("button",{onClick:()=>setEditT(null),style:{padding:"4px 10px",borderRadius:6,border:"1px solid #ddd",background:"#fff",color:"#666"}},"✕")
+          ?h(React.Fragment,null,
+              h("input",{value:editN,onChange:ev=>setEditN(ev.target.value),onKeyDown:ev=>ev.key==="Enter"&&renameTopic(t,editN),autoFocus:true,style:{flex:1}}),
+              h("button",{onClick:()=>renameTopic(t,editN),style:{padding:"4px 10px",borderRadius:6,border:"none",background:color,color:"#fff"}},"✓"),
+              h("button",{onClick:()=>setEditT(null),style:{padding:"4px 10px",borderRadius:6,border:"1px solid #ddd",background:"#fff",color:"#666"}},"✕")
             )
-          :e(React.Fragment,null,
-              e("span",null,t),
-              e("button",{className:"ib",onClick:()=>{setEditT(t);setEditN(t)}},"✏️"),
-              e("button",{className:"ib",style:{color:"#e85a2a"},onClick:()=>deleteTopic(t)},"🗑️")
+          :h(React.Fragment,null,
+              h("span",null,t),
+              h("button",{className:"ib",onClick:()=>{setEditT(t);setEditN(t)}},"✏️"),
+              h("button",{className:"ib",style:{color:"#e85a2a"},onClick:()=>deleteTopic(t)},"🗑️")
             )
       )),
-      e("div",{style:{display:"flex",gap:8,marginTop:10}},
-        e("input",{value:newTN,onChange:ev=>setNewTN(ev.target.value),onKeyDown:ev=>ev.key==="Enter"&&addTopic(),placeholder:"New topic name...",style:{flex:1}}),
-        e("button",{onClick:addTopic,disabled:!newTN.trim(),style:{padding:"7px 14px",borderRadius:8,border:"none",background:color,color:"#fff",opacity:newTN.trim()?1:0.5}},"➕ Add")
+      h("div",{style:{display:"flex",gap:8,marginTop:10}},
+        h("input",{value:newTN,onChange:ev=>setNewTN(ev.target.value),onKeyDown:ev=>ev.key==="Enter"&&addTopic(),placeholder:"New topic name...",style:{flex:1}}),
+        h("button",{onClick:addTopic,disabled:!newTN.trim(),style:{padding:"7px 14px",borderRadius:8,border:"none",background:color,color:"#fff",opacity:newTN.trim()?1:0.5}},"➕ Add")
       )
     ),
 
     // Skip toggle
-    e("div",{className:"skip",onClick:togSkip},
-      e("div",{className:"tog"+(skip?" on":""),style:skip?{background:color}:{}},e("div",{className:"knob"})),
-      e("span",{style:{fontSize:13,color:"#666"}},
+    h("div",{className:"skip",onClick:togSkip},
+      h("div",{className:"tog"+(skip?" on":""),style:skip?{background:color}:{}},h("div",{className:"knob"})),
+      h("span",{style:{fontSize:13,color:"#666"}},
         "Skip words I know",
-        skip&&e("span",{style:{color,fontWeight:500,marginLeft:6}},"("+deck.length+" left)")
+        skip&&h("span",{style:{color,fontWeight:500,marginLeft:6}},"("+deck.length+" left)")
       )
     ),
 
     // Counter
-    e("div",{className:"ctr"},
-      e("span",null,"Card "+(idx+1)+" of "+deck.length),
-      e("div",{className:"badges"},e("span",{className:"bk"},known.size+" ✓"),e("span",{className:"br"},review.size+" ↺"))
+    h("div",{className:"ctr"},
+      h("span",null,"Card "+(idx+1)+" of "+deck.length),
+      h("div",{className:"badges"},h("span",{className:"bk"},known.size+" ✓"),h("span",{className:"br"},review.size+" ↺"))
     ),
 
     // Progress
-    e("div",{className:"prog"},e("div",{className:"progfill",style:{width:prog+"%",background:color}})),
+    h("div",{className:"prog"},h("div",{className:"progfill",style:{width:prog+"%",background:color}})),
 
     // Card
-    e("div",{className:"card",style:{border:`1px solid ${isK?"#2aae6e":isR?"#e8a82a":"#eee"}`},onClick:()=>setFlip(f=>!f)},
-      e("span",{className:"tag",style:{background:(COLORS[card.t]||"#2a85e8")+"22",color:COLORS[card.t]||"#2a85e8"}},card.t),
-      e("span",{className:"hint"},flip?"meaning":"tap to reveal"),
-      !flip
-        ?e(React.Fragment,null,e("div",{className:"fr"},card.fr),e("div",{className:"pr"},card.pr))
-        :e(React.Fragment,null,e("div",{className:"en-sm"},card.fr),e("div",{className:"en"},card.en))
-    ),
+    deck.length>0
+      ?h("div",{className:"card",style:{border:`1px solid ${isK?"#2aae6e":isR?"#e8a82a":"#eee"}`},onClick:()=>setFlip(f=>!f)},
+          h("span",{className:"tag",style:{background:getColor(card.t)+"22",color:getColor(card.t)}},card.t),
+          h("span",{className:"hint"},flip?"meaning":"tap to reveal"),
+          !flip
+            ?h(React.Fragment,null,h("div",{className:"fr"},card.fr),h("div",{className:"pr"},card.pr))
+            :h(React.Fragment,null,h("div",{className:"en-sm"},card.fr),h("div",{className:"en"},card.en))
+        )
+      :h("div",{className:"card"},h("div",{className:"empty"},"No cards in this topic yet!")),
 
     // Speaker
-    e("div",{className:"speak-row"},
-      e("button",{className:"speak"+(spk?" on":""),onClick:speak},"🔊")
+    h("div",{className:"speak-row"},
+      h("button",{className:"speak"+(spk?" on":""),onClick:speak},"🔊")
     ),
 
     // Mark buttons
-    e("div",{className:"marks"},
-      e("button",{className:"mk"+(isK?" k":""),onClick:()=>mark(isK?null:"k")},"✓"),
-      e("button",{className:"mk"+(isR?" r":""),onClick:()=>mark(isR?null:"r")},"↺")
+    h("div",{className:"marks"},
+      h("button",{className:"mk"+(isK?" k":""),onClick:()=>mark(isK?null:"k")},"✓"),
+      h("button",{className:"mk"+(isR?" r":""),onClick:()=>mark(isR?null:"r")},"↺")
     ),
 
     // Nav
-    e("div",{className:"navs"},
-      e("button",{className:"nv",onClick:()=>go(-1)},"←"),
-      e("button",{className:"shuf",onClick:()=>{setDeck(d=>shuf(d));setIdx(0);setFlip(false)}},"⇄"),
-      e("button",{className:"nv",onClick:()=>go(1)},"→")
+    h("div",{className:"navs"},
+      h("button",{className:"nv",onClick:()=>go(-1)},"←"),
+      h("button",{className:"shuf",onClick:()=>{setDeck(d=>shuf(d));setIdx(0);setFlip(false)}},"⇄"),
+      h("button",{className:"nv",onClick:()=>go(1)},"→")
     )
   );
 }
 
-ReactDOM.render(e(App),document.getElementById("app"));
+ReactDOM.render(h(App),document.getElementById("app"));
 </script>
 </body>
 </html>
