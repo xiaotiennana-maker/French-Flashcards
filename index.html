@@ -179,7 +179,8 @@ function App(){
       const r=JSON.parse(localStorage.getItem("fr-review")||"[]");
       const u=localStorage.getItem("fr-sheet-url")||"";
       const ct=JSON.parse(localStorage.getItem("fr-custom-topics")||"[]");
-      setKnown(new Set(k)); setReview(new Set(r));
+      const saved = JSON.parse(localStorage.getItem("fr-custom-words")||"[]");
+      if(saved.length) { const combined=[...BASE,...saved]; setCards(combined); setDeck(mkDeck("All",false,new Set(),combined)); }
       setSheetUrl(u); setCustomTopics(ct);
     }catch(e){}
   },[]);
@@ -287,7 +288,26 @@ function App(){
     }
   };
 
-  const addTopic = () => {
+  const [showAddWord, setShowAddWord] = useState(false);
+  const [newFr, setNewFr] = useState("");
+  const [newPr, setNewPr] = useState("");
+  const [newEn, setNewEn] = useState("");
+  const [newT, setNewT] = useState("Everyday");
+  const [addMsg, setAddMsg] = useState("");
+
+  const addWord = () => {
+    if(!newFr.trim()||!newEn.trim()) { setAddMsg("⚠️ French and English are required!"); return; }
+    const word = {fr:newFr.trim(), pr:newPr.trim(), en:newEn.trim(), t:newT.trim()||"My Words"};
+    const updated = [...cards, word];
+    setCards(updated);
+    setDeck(mkDeck(topic, skip, known, updated));
+    // Save custom words to localStorage
+    const saved = JSON.parse(localStorage.getItem("fr-custom-words")||"[]");
+    localStorage.setItem("fr-custom-words", JSON.stringify([...saved, word]));
+    setNewFr(""); setNewPr(""); setNewEn(""); setNewT("Everyday");
+    setAddMsg("✅ Word added!");
+    setTimeout(()=>setAddMsg(""), 2000);
+  };
     const name=newTopic.trim();
     if(!name||customTopics.includes(name)||PROTECTED.includes(name)) return;
     const updated=[...customTopics,name];
@@ -325,7 +345,7 @@ function App(){
         h("span",{style:{fontWeight:500}},cards.length+" total")
       ),
       h("div",{className:"row",style:{gap:6}},
-        h("button",{className:"pill",style:{background:sheetSt==="success"?"#16a08522":"#fff",color:sheetSt==="success"?"#16a085":"#666",border:"0.5px solid #ddd"},onClick:()=>setShowSheet(p=>!p)},"📊 "+(sheetSt==="success"?"Connected":"Connect Sheet")),
+        h("button",{className:"pill",style:{background:showAddWord?color:"#fff",color:showAddWord?"#fff":"#666",border:"0.5px solid #ddd"},onClick:()=>setShowAddWord(p=>!p)},"➕ Add Word"),
         h("button",{className:"pill",style:{background:color,color:"#fff"},onClick:save},"Save"),
         h("button",{className:"pill",style:{background:"#fff",border:"0.5px solid #ddd",color:"#666"},onClick:reset},"Reset"),
       )
@@ -373,11 +393,9 @@ function App(){
                 h("button",{onClick:()=>setEditT(null),style:{padding:"4px 10px",borderRadius:8,border:"0.5px solid #ddd",background:"#fff",color:"#666"}},"✕")
               )
             : h(React.Fragment,null,
-                h("span",{style:{flex:1,fontSize:13,padding:"4px 8px",borderRadius:8,background:"#fff",border:"0.5px solid #eee"}},
-                  t, PROTECTED.includes(t)&&h("span",{style:{fontSize:10,color:"#aaa",marginLeft:4}},"🔒")
-                ),
-                !PROTECTED.includes(t)&&h("button",{onClick:()=>{setEditT(t);setEditName(t);},style:{padding:"4px 8px",borderRadius:8,border:"0.5px solid #ddd",background:"#fff",color:"#666"}},"✏️"),
-                !PROTECTED.includes(t)&&h("button",{onClick:()=>deleteTopic(t),style:{padding:"4px 8px",borderRadius:8,border:"0.5px solid #ddd",background:"#fff",color:"#e85a2a"}},"🗑️")
+                h("span",{style:{flex:1,fontSize:13,padding:"4px 8px",borderRadius:8,background:"#fff",border:"0.5px solid #eee"}}, t),
+                h("button",{onClick:()=>{setEditT(t);setEditName(t);},style:{padding:"4px 8px",borderRadius:8,border:"0.5px solid #ddd",background:"#fff",color:"#666"}},"✏️"),
+                h("button",{onClick:()=>deleteTopic(t),style:{padding:"4px 8px",borderRadius:8,border:"0.5px solid #ddd",background:"#fff",color:"#e85a2a"}},"🗑️")
               )
         )
       ),
