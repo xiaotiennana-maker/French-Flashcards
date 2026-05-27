@@ -296,7 +296,14 @@ function App(){
         return{fr:c[0]||"",pr:c[1]||"",en:c[2]||"",t:c[3]||"My Words"};
       }).filter(c=>c.fr&&c.en);
       if(!nc.length)throw new Error("No cards found. Columns: French, Pronunciation, English, Topic");
-      const combined=[...BASE,...nc];
+      // Merge: keep BASE + existing custom words + new sheet words
+      const existingCustom=lsGet("fr-words",[]);
+      const combined=[...BASE,...existingCustom,...nc];
+      // Add new topics from sheet to customTopics
+      const sheetTopics=[...new Set(nc.map(c=>c.t))].filter(t=>!COLORS[t]);
+      const mergedTopics=[...new Set([...customTopics,...sheetTopics])];
+      setCustomTopics(mergedTopics);
+      lsSet("fr-topics",mergedTopics);
       setCards(combined);
       updateDeck(topic,skip,known,combined);
       setSSt("success");
