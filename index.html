@@ -198,8 +198,9 @@ function App(){
   const [editT,setEditT]=useState(null);const [editN,setEditN]=useState("");const [newTN,setNewTN]=useState("");
 
   const color=COLORS[topic]||"#2a85e8";
-  const allBuiltin=Object.keys(COLORS).filter(k=>k!=="All");
-  const allCustom=customTopics.filter(t=>!Object.keys(COLORS).includes(t));
+  const hiddenTopics=lsj("fr-hidden-topics",[]);
+  const allBuiltin=Object.keys(COLORS).filter(k=>k!=="All"&&!hiddenTopics.includes(k));
+  const allCustom=customTopics.filter(t=>!Object.keys(COLORS).includes(t)&&!hiddenTopics.includes(t));
   const allTopics=["All",...allBuiltin,...allCustom];
   const allManage=[...allBuiltin,...allCustom];
   const card=deck[idx];
@@ -267,9 +268,21 @@ function App(){
   };
   const deleteTopic=(name)=>{
     if(!confirm(`Delete "${name}"? Cards will move to My Words.`))return;
-    const uc=cards.map(c=>c.t===name?{...c,t:"My Words"}:c);setCards(uc);setDeck(mkDeck(topic,skip,known,uc));
-    saveTopics(customTopics.filter(t=>t!==name));
-    if(topic===name)chgTopic("All");
+    // Move all cards with this topic to My Words
+    const uc=cards.map(c=>c.t===name?{...c,t:"My Words"}:c);
+    setCards(uc);
+    setDeck(mkDeck(topic==="All"?"All":topic===name?"All":topic,skip,known,uc));
+    // Remove from custom topics if it's custom
+    const updatedCustom=customTopics.filter(t=>t!==name);
+    setCustomTopics(updatedCustom);
+    lss("fr-topics",updatedCustom);
+    // Also remove from built-in display by adding to a "hidden" list
+    const hidden=lsj("fr-hidden-topics",[]);
+    if(!hidden.includes(name)){
+      const updatedHidden=[...hidden,name];
+      lss("fr-hidden-topics",updatedHidden);
+    }
+    if(topic===name)setTopic("All");
   };
 
   const togPanel=(p)=>setPanel(prev=>prev===p?null:p);
