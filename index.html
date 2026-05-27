@@ -209,7 +209,11 @@ function App(){
   const prog=Math.round(((known.size+review.size)/deck.length)*100);
 
   const go=(d)=>{setFlip(false);setIdx(i=>(i+d+deck.length)%deck.length)};
-  const chgTopic=(t)=>{setTopic(t);setDeck(mkDeck(t,skip,known,cards));setIdx(0);setFlip(false)};
+  const chgTopic=(t)=>{
+    const newDeck=mkDeck(t,skip,known,cards);
+    if(newDeck.length===0){alert(`No cards in "${t}" yet!`);return;}
+    setTopic(t);setDeck(newDeck);setIdx(0);setFlip(false);
+  };
   const togSkip=()=>{const n=!skip;setSkip(n);setDeck(mkDeck(topic,n,known,cards));setIdx(0);setFlip(false)};
   const mark=(type)=>{
     const id=card.fr;
@@ -341,9 +345,12 @@ function App(){
       e("button",{className:"btn"+(panel==="topics"?" primary":""),style:panel==="topics"?{background:color,border:"none",color:"#fff"}:{},onClick:()=>togPanel("topics")},"⚙️ Manage")
     ),
 
-    // Topic pills
+    // Topic pills — only show topics that have cards, plus All
     e("div",{className:"topic-pills"},
-      allTopics.map(t=>e("button",{key:t,className:"tp"+(topic===t?" on":""),style:topic===t?{background:COLORS[t]||"#2a85e8"}:{},onClick:()=>chgTopic(t)},t))
+      allTopics.filter(t=>{
+        if(t==="All") return true;
+        return cards.some(c=>c.t===t);
+      }).map(t=>e("button",{key:t,className:"tp"+(topic===t?" on":""),style:topic===t?{background:COLORS[t]||"#2a85e8"}:{},onClick:()=>chgTopic(t)},t))
     ),
 
     // Topics manager panel
