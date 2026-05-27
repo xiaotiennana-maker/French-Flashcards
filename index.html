@@ -16,10 +16,14 @@
     #root{max-width:520px;margin:0 auto;padding:1rem}
     button{cursor:pointer;font-family:inherit}
     .row{display:flex;align-items:center;gap:8px}
-    .pill{border-radius:999px;border:none;font-size:12px;font-weight:500;padding:5px 14px}
-    .card-box{border-radius:20px;box-shadow:0 4px 24px rgba(0,0,0,.07);padding:2rem 1.5rem;min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;cursor:pointer;position:relative;border:0.5px solid #eee;background:#fff;user-select:none}
+    .pill{border-radius:999px;border:0.5px solid #ddd;font-size:12px;font-weight:500;padding:5px 12px;background:#fff;color:#666}
+    .pill.active{border:none;color:#fff}
     .panel{background:#f7f7f7;border:0.5px solid #ddd;border-radius:16px;padding:1rem;margin-bottom:.75rem}
-    input{font-family:inherit;outline:none;border:0.5px solid #ddd;border-radius:8px;padding:6px 10px;font-size:12px;width:100%}
+    .panel-title{font-size:13px;font-weight:500;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+    .close-btn{font-size:12px;padding:2px 10px;border-radius:999px;border:0.5px solid #ddd;background:#fff;color:#666}
+    input,select{font-family:inherit;outline:none;border:0.5px solid #ddd;border-radius:8px;padding:6px 10px;font-size:12px;background:#fff;width:100%}
+    .field{margin-bottom:8px}
+    .field-label{font-size:12px;color:#666;margin-bottom:4px}
     .topic-btn{padding:5px 12px;border-radius:999px;font-size:12px;border:0.5px solid #ddd;background:#fff;color:#666}
     .topic-btn.active{border:none;color:#fff;font-weight:500}
     .toggle-wrap{display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:.75rem}
@@ -32,10 +36,14 @@
     .badge{font-size:12px;padding:3px 10px;border-radius:20px}
     .bk{background:#e6f9f0;color:#2aae6e}
     .br{background:#fff8e1;color:#e8a82a}
+    .card-box{border-radius:20px;box-shadow:0 4px 24px rgba(0,0,0,.07);padding:2rem 1.5rem;min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;cursor:pointer;position:relative;border:0.5px solid #eee;background:#fff;user-select:none}
     .mark-btn{flex:1;padding:6px 0;font-size:18px;border-radius:12px;border:0.5px solid #ddd;background:#fff;color:#888;display:flex;align-items:center;justify-content:center}
     .mark-btn.k{background:#e6f9f0;color:#2aae6e;border-color:#2aae6e}
     .mark-btn.r{background:#fff8e1;color:#e8a82a;border-color:#e8a82a}
     .nav-btn{flex:1;padding:8px 0;font-size:18px;border-radius:12px;border:0.5px solid #ddd;background:#fff;color:#333;display:flex;align-items:center;justify-content:center}
+    .topic-row-item{display:flex;align-items:center;gap:6px;margin-bottom:6px;background:#fff;border:0.5px solid #eee;border-radius:8px;padding:4px 8px}
+    .topic-row-item span{flex:1;font-size:13px}
+    .icon-btn{padding:4px 8px;border-radius:8px;border:0.5px solid #ddd;background:#fff;font-size:13px}
   </style>
 </head>
 <body>
@@ -45,7 +53,6 @@
 <script>
 const {useState, useEffect, useCallback, createElement: h} = React;
 
-const PROTECTED = ["Everyday","Months & Days","Numbers","Classroom","Adjectives","Verbs","Family & Home","City & Transport"];
 const COLORS = {"All":"#2a85e8","Everyday":"#e85a2a","Months & Days":"#2aae6e","Numbers":"#9b2ae8","Classroom":"#e8a82a","Adjectives":"#e82a7a","Verbs":"#2ab8e8","Family & Home":"#e86a2a","City & Transport":"#5a8ae8","My Words":"#16a085"};
 
 const BASE = [
@@ -146,72 +153,73 @@ const BASE = [
 ];
 
 function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]]}return b}
-
-function mkDeck(topic, skip, knownSet, cards){
-  let f = topic==="All" ? cards : cards.filter(c=>c.t===topic);
-  if(skip) f=f.filter(c=>!knownSet.has(c.fr));
-  return f.length>0 ? f : (topic==="All"?cards:cards.filter(c=>c.t===topic));
-}
+function mkDeck(topic,skip,knownSet,cards){let f=topic==="All"?cards:cards.filter(c=>c.t===topic);if(skip)f=f.filter(c=>!knownSet.has(c.fr));return f.length>0?f:(topic==="All"?cards:cards.filter(c=>c.t===topic))}
+function ls(k,def=""){try{return localStorage.getItem(k)||def}catch(e){return def}}
+function lsSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
 
 function App(){
-  const [cards, setCards] = useState(BASE);
+  const [cards, setCards] = useState(()=>{
+    try{const w=JSON.parse(ls("fr-custom-words","[]"));return w.length?[...BASE,...w]:BASE}catch(e){return BASE}
+  });
   const [topic, setTopic] = useState("All");
   const [skip, setSkip] = useState(false);
-  const [known, setKnown] = useState(new Set());
-  const [review, setReview] = useState(new Set());
-  const [deck, setDeck] = useState(BASE);
+  const [known, setKnown] = useState(()=>new Set(JSON.parse(ls("fr-known","[]"))));
+  const [review, setReview] = useState(()=>new Set(JSON.parse(ls("fr-review","[]"))));
+  const [deck, setDeck] = useState(()=>mkDeck("All",false,new Set(),BASE));
   const [idx, setIdx] = useState(0);
   const [flip, setFlip] = useState(false);
   const [speaking, setSpeaking] = useState(false);
+  const [customTopics, setCustomTopics] = useState(()=>{try{return JSON.parse(ls("fr-custom-topics","[]"))}catch(e){return[]}});
+
+  // Panel visibility
   const [showSheet, setShowSheet] = useState(false);
-  const [sheetUrl, setSheetUrl] = useState("");
+  const [showAddWord, setShowAddWord] = useState(false);
+  const [showTopics, setShowTopics] = useState(false);
+
+  // Sheet state
+  const [sheetUrl, setSheetUrl] = useState(ls("fr-sheet-url",""));
   const [sheetSt, setSheetSt] = useState("idle");
   const [sheetErr, setSheetErr] = useState("");
-  const [showTopics, setShowTopics] = useState(false);
-  const [customTopics, setCustomTopics] = useState([]);
-  const [newTopic, setNewTopic] = useState("");
+
+  // Add word state
+  const [newFr, setNewFr] = useState("");
+  const [newPr, setNewPr] = useState("");
+  const [newEn, setNewEn] = useState("");
+  const [newWordTopic, setNewWordTopic] = useState("Everyday");
+  const [addMsg, setAddMsg] = useState("");
+
+  // Topic manager state
   const [editT, setEditT] = useState(null);
   const [editName, setEditName] = useState("");
+  const [newTopicName, setNewTopicName] = useState("");
 
-  useEffect(()=>{
-    try{
-      const k=JSON.parse(localStorage.getItem("fr-known")||"[]");
-      const r=JSON.parse(localStorage.getItem("fr-review")||"[]");
-      const u=localStorage.getItem("fr-sheet-url")||"";
-      const ct=JSON.parse(localStorage.getItem("fr-custom-topics")||"[]");
-      const saved = JSON.parse(localStorage.getItem("fr-custom-words")||"[]");
-      if(saved.length) { const combined=[...BASE,...saved]; setCards(combined); setDeck(mkDeck("All",false,new Set(),combined)); }
-      setSheetUrl(u); setCustomTopics(ct);
-    }catch(e){}
-  },[]);
-
+  const allTopics = ["All",...Object.keys(COLORS).filter(k=>k!=="All"),...customTopics.filter(t=>!Object.keys(COLORS).includes(t))];
   const color = COLORS[topic]||"#2a85e8";
-  const topics = ["All",...PROTECTED,...customTopics.filter(t=>!PROTECTED.includes(t))];
   const card = deck[idx];
   const isK = known.has(card.fr);
   const isR = review.has(card.fr);
   const prog = Math.round(((known.size+review.size)/deck.length)*100);
 
-  const changeTopic = (t) => { setTopic(t); setDeck(mkDeck(t,skip,known,cards)); setIdx(0); setFlip(false); };
-  const toggleSkip = () => { const n=!skip; setSkip(n); setDeck(mkDeck(topic,n,known,cards)); setIdx(0); setFlip(false); };
-  const go = (d) => { setFlip(false); setIdx(i=>(i+d+deck.length)%deck.length); };
+  const changeTopic = (t)=>{setTopic(t);setDeck(mkDeck(t,skip,known,cards));setIdx(0);setFlip(false)};
+  const toggleSkip = ()=>{const n=!skip;setSkip(n);setDeck(mkDeck(topic,n,known,cards));setIdx(0);setFlip(false)};
+  const go = (d)=>{setFlip(false);setIdx(i=>(i+d+deck.length)%deck.length)};
 
-  const mark = (type) => {
+  const mark = (type)=>{
     const id=card.fr;
-    setKnown(s=>{const n=new Set(s);type==="k"?n.add(id):n.delete(id);return n;});
-    setReview(s=>{const n=new Set(s);type==="r"?n.add(id):n.delete(id);return n;});
+    setKnown(s=>{const n=new Set(s);type==="k"?n.add(id):n.delete(id);return n});
+    setReview(s=>{const n=new Set(s);type==="r"?n.add(id):n.delete(id);return n});
   };
 
-  const save = () => {
-    localStorage.setItem("fr-known",JSON.stringify([...known]));
-    localStorage.setItem("fr-review",JSON.stringify([...review]));
+  const save = ()=>{
+    lsSet("fr-known",JSON.stringify([...known]));
+    lsSet("fr-review",JSON.stringify([...review]));
     alert("Progress saved ✓");
   };
 
-  const reset = () => {
+  const reset = ()=>{
     if(!confirm("Reset all progress?")) return;
     setKnown(new Set()); setReview(new Set());
-    localStorage.removeItem("fr-known"); localStorage.removeItem("fr-review");
+    lsSet("fr-known","[]"); lsSet("fr-review","[]");
   };
 
   const speak = useCallback(()=>{
@@ -225,141 +233,115 @@ function App(){
     window.speechSynthesis.speak(u);
   },[card]);
 
-  const fetchSheet = async (url) => {
-    setSheetSt("loading"); setSheetErr("");
-    try {
-      if(!url.includes("google.com/spreadsheets")) throw new Error("Invalid URL.");
-
-      // Extract sheet ID and build CSV url
-      let csvUrl;
-      if(url.includes("/pub?output=csv")) {
-        csvUrl = url;
-      } else {
-        const m = url.match(/\/d\/e\/([\w-]+)/) || url.match(/\/d\/([\w-]+)/);
-        if(!m) throw new Error("Could not read the sheet ID from this URL.");
-        csvUrl = url.includes("/d/e/")
-          ? `https://docs.google.com/spreadsheets/d/e/${m[1]}/pub?output=csv`
-          : `https://docs.google.com/spreadsheets/d/${m[1]}/pub?output=csv`;
-      }
-
-      // Try fetch with no-cors mode fallback
-      let text = null;
-      try {
-        const res = await fetch(csvUrl, {mode:"cors"});
-        if(res.ok) text = await res.text();
-      } catch(e1) {}
-
-      // Try with allorigins proxy if direct fetch failed
-      if(!text) {
-        try {
-          const proxy = `https://api.allorigins.win/raw?url=${encodeURIComponent(csvUrl)}`;
-          const res = await fetch(proxy);
-          if(res.ok) text = await res.text();
-        } catch(e2) {}
-      }
-
-      // Try corsproxy.io as last resort
-      if(!text) {
-        try {
-          const proxy2 = `https://corsproxy.io/?${encodeURIComponent(csvUrl)}`;
-          const res = await fetch(proxy2);
-          if(res.ok) text = await res.text();
-        } catch(e3) {}
-      }
-
-      if(!text) throw new Error("Could not connect. Try: File → Share → Publish to web → select CSV → Publish, then copy the new link.");
-
-      const lines = text.trim().split("\n").slice(1);
-      const newCards = lines.map(line => {
-        const cols = (line.match(/(".*?"|[^,]+)(?=,|$)/g)||[]).map(c=>c.replace(/^"|"$/g,"").trim());
-        return {fr:cols[0]||"", pr:cols[1]||"", en:cols[2]||"", t:cols[3]||"My Words"};
-      }).filter(c=>c.fr&&c.en);
-
-      if(!newCards.length) throw new Error("No cards found. Make sure your sheet has data in columns: French, Pronunciation, English, Topic");
-
-      const combined = [...BASE, ...newCards];
-      setCards(combined);
-      setDeck(mkDeck(topic, skip, known, combined));
-      setIdx(0); setFlip(false); setSheetSt("success");
-      localStorage.setItem("fr-sheet-url", url);
-    } catch(e) {
-      setSheetSt("error");
-      setSheetErr(e.message);
-    }
-  };
-
-  const [showAddWord, setShowAddWord] = useState(false);
-  const [newFr, setNewFr] = useState("");
-  const [newPr, setNewPr] = useState("");
-  const [newEn, setNewEn] = useState("");
-  const [newT, setNewT] = useState("Everyday");
-  const [addMsg, setAddMsg] = useState("");
-
-  const addWord = () => {
-    if(!newFr.trim()||!newEn.trim()) { setAddMsg("⚠️ French and English are required!"); return; }
-    const word = {fr:newFr.trim(), pr:newPr.trim(), en:newEn.trim(), t:newT.trim()||"My Words"};
-    const updated = [...cards, word];
+  const addWord = ()=>{
+    if(!newFr.trim()||!newEn.trim()){setAddMsg("⚠️ French and English are required!");return}
+    const word={fr:newFr.trim(),pr:newPr.trim(),en:newEn.trim(),t:newWordTopic||"My Words"};
+    const updated=[...cards,word];
     setCards(updated);
-    setDeck(mkDeck(topic, skip, known, updated));
-    // Save custom words to localStorage
-    const saved = JSON.parse(localStorage.getItem("fr-custom-words")||"[]");
-    localStorage.setItem("fr-custom-words", JSON.stringify([...saved, word]));
-    setNewFr(""); setNewPr(""); setNewEn(""); setNewT("Everyday");
+    setDeck(mkDeck(topic,skip,known,updated));
+    const saved=JSON.parse(ls("fr-custom-words","[]"));
+    lsSet("fr-custom-words",JSON.stringify([...saved,word]));
+    setNewFr(""); setNewPr(""); setNewEn("");
     setAddMsg("✅ Word added!");
-    setTimeout(()=>setAddMsg(""), 2000);
-  };
-    const name=newTopic.trim();
-    if(!name||customTopics.includes(name)||PROTECTED.includes(name)) return;
-    const updated=[...customTopics,name];
-    setCustomTopics(updated); localStorage.setItem("fr-custom-topics",JSON.stringify(updated));
-    setNewTopic("");
+    setTimeout(()=>setAddMsg(""),2000);
   };
 
-  const renameTopic = (old, nw) => {
-    const trimmed=nw.trim();
-    if(!trimmed||trimmed===old){setEditT(null);return;}
-    setCards(cs=>cs.map(c=>c.t===old?{...c,t:trimmed}:c));
-    const updated=customTopics.map(t=>t===old?trimmed:t);
-    setCustomTopics(updated); localStorage.setItem("fr-custom-topics",JSON.stringify(updated));
-    if(topic===old) setTopic(trimmed);
+  const fetchSheet = async(url)=>{
+    setSheetSt("loading"); setSheetErr("");
+    try{
+      if(!url.includes("google.com/spreadsheets")) throw new Error("Invalid URL.");
+      let csvUrl=url.includes("pub?output=csv")?url:(()=>{
+        const m=url.match(/\/d\/e\/([\w-]+)/)||url.match(/\/d\/([\w-]+)/);
+        if(!m) throw new Error("Could not read sheet ID.");
+        return url.includes("/d/e/")
+          ?`https://docs.google.com/spreadsheets/d/e/${m[1]}/pub?output=csv`
+          :`https://docs.google.com/spreadsheets/d/${m[1]}/pub?output=csv`;
+      })();
+      let text=null;
+      for(const proxy of [csvUrl,`https://api.allorigins.win/raw?url=${encodeURIComponent(csvUrl)}`,`https://corsproxy.io/?${encodeURIComponent(csvUrl)}`]){
+        try{const r=await fetch(proxy);if(r.ok){text=await r.text();break}}catch(e){}
+      }
+      if(!text) throw new Error("Could not connect. Make sure sheet is published: File → Share → Publish to web → CSV.");
+      const lines=text.trim().split("\n").slice(1);
+      const newCards=lines.map(line=>{
+        const cols=(line.match(/(".*?"|[^,]+)(?=,|$)/g)||[]).map(c=>c.replace(/^"|"$/g,"").trim());
+        return{fr:cols[0]||"",pr:cols[1]||"",en:cols[2]||"",t:cols[3]||"My Words"};
+      }).filter(c=>c.fr&&c.en);
+      if(!newCards.length) throw new Error("No cards found. Check columns: French, Pronunciation, English, Topic");
+      const combined=[...BASE,...newCards];
+      setCards(combined); setDeck(mkDeck(topic,skip,known,combined));
+      setIdx(0); setFlip(false); setSheetSt("success");
+      lsSet("fr-sheet-url",url);
+    }catch(e){setSheetSt("error");setSheetErr(e.message)}
+  };
+
+  const saveCustomTopics = (t)=>{setCustomTopics(t);lsSet("fr-custom-topics",JSON.stringify(t))};
+  const addTopic = ()=>{const n=newTopicName.trim();if(!n)return;saveCustomTopics([...customTopics,n]);setNewTopicName("")};
+  const renameTopic = (old,nw)=>{
+    const tr=nw.trim();if(!tr||tr===old){setEditT(null);return}
+    setCards(cs=>cs.map(c=>c.t===old?{...c,t:tr}:c));
+    saveCustomTopics(customTopics.map(t=>t===old?tr:t));
+    if(topic===old) setTopic(tr);
     setEditT(null);
   };
-
-  const deleteTopic = (name) => {
+  const deleteTopic = (name)=>{
     if(!confirm(`Delete "${name}"? Cards will move to My Words.`)) return;
     setCards(cs=>cs.map(c=>c.t===name?{...c,t:"My Words"}:c));
-    const updated=customTopics.filter(t=>t!==name);
-    setCustomTopics(updated); localStorage.setItem("fr-custom-topics",JSON.stringify(updated));
+    saveCustomTopics(customTopics.filter(t=>t!==name));
     if(topic===name) changeTopic("All");
   };
+
+  const topicList = [...Object.keys(COLORS).filter(k=>k!=="All"),...customTopics.filter(t=>!Object.keys(COLORS).includes(t))];
+  const topicDropdown = [...topicList,"My Words"].filter((v,i,a)=>a.indexOf(v)===i);
 
   return h("div",{id:"root"},
 
     // Top bar
-    h("div",{className:"row",style:{justifyContent:"space-between",marginBottom:".75rem",flexWrap:"wrap",gap:6}},
+    h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:".75rem",flexWrap:"wrap",gap:6}},
       h("div",{style:{fontSize:12,color:"#666"}},
         h("span",{style:{color:"#2aae6e",fontWeight:500}},known.size+" ✓"),
-        " / ",
-        h("span",{style:{color:"#e8a82a",fontWeight:500}},review.size+" ↺"),
-        " / ",
-        h("span",{style:{fontWeight:500}},cards.length+" total")
+        " / ",h("span",{style:{color:"#e8a82a",fontWeight:500}},review.size+" ↺"),
+        " / ",h("span",{style:{fontWeight:500}},cards.length+" total")
       ),
-      h("div",{className:"row",style:{gap:6}},
-        h("button",{className:"pill",style:{background:showAddWord?color:"#fff",color:showAddWord?"#fff":"#666",border:"0.5px solid #ddd"},onClick:()=>setShowAddWord(p=>!p)},"➕ Add Word"),
-        h("button",{className:"pill",style:{background:color,color:"#fff"},onClick:save},"Save"),
-        h("button",{className:"pill",style:{background:"#fff",border:"0.5px solid #ddd",color:"#666"},onClick:reset},"Reset"),
+      h("div",{style:{display:"flex",gap:6,flexWrap:"wrap"}},
+        h("button",{className:"pill"+(showAddWord?" active":""),style:showAddWord?{background:color,border:"none"}:{},onClick:()=>{setShowAddWord(p=>!p);setShowSheet(false);setShowTopics(false)}},"➕ Add Word"),
+        h("button",{className:"pill",style:{background:sheetSt==="success"?"#16a08522":"#fff",color:sheetSt==="success"?"#16a085":"#666"},onClick:()=>{setShowSheet(p=>!p);setShowAddWord(false);setShowTopics(false)}},"📊 "+(sheetSt==="success"?"Connected":"Connect Sheet")),
+        h("button",{className:"pill",style:{background:color,border:"none",color:"#fff"},onClick:save},"Save"),
+        h("button",{className:"pill",onClick:reset},"Reset"),
       )
     ),
 
-    // Sheet panel
+    // Add Word Panel
+    showAddWord && h("div",{className:"panel"},
+      h("div",{className:"panel-title"},
+        "➕ Add New Word",
+        h("button",{className:"close-btn",onClick:()=>setShowAddWord(false)},"✕ Close")
+      ),
+      h("div",{className:"field"},h("div",{className:"field-label"},"🇫🇷 French *"),h("input",{value:newFr,onChange:e=>setNewFr(e.target.value),placeholder:"e.g. la mer"})),
+      h("div",{className:"field"},h("div",{className:"field-label"},"🔊 Pronunciation (optional)"),h("input",{value:newPr,onChange:e=>setNewPr(e.target.value),placeholder:"e.g. lah MEHR"})),
+      h("div",{className:"field"},h("div",{className:"field-label"},"🇬🇧 English *"),h("input",{value:newEn,onChange:e=>setNewEn(e.target.value),placeholder:"e.g. the sea"})),
+      h("div",{className:"field"},
+        h("div",{className:"field-label"},"📁 Topic"),
+        h("select",{value:newWordTopic,onChange:e=>setNewWordTopic(e.target.value)},
+          topicDropdown.map(t=>h("option",{key:t,value:t},t))
+        )
+      ),
+      h("button",{onClick:addWord,style:{width:"100%",padding:"10px",borderRadius:12,border:"none",background:color,color:"#fff",fontSize:14,fontWeight:500}},"➕ Add Card"),
+      addMsg && h("div",{style:{marginTop:8,fontSize:13,textAlign:"center",color:addMsg.includes("✅")?"#2aae6e":"#e85a2a"}},addMsg)
+    ),
+
+    // Sheet Panel
     showSheet && h("div",{className:"panel"},
-      h("div",{style:{fontSize:13,fontWeight:500,marginBottom:8}},"📊 Connect Google Sheet"),
+      h("div",{className:"panel-title"},
+        "📊 Connect Google Sheet",
+        h("button",{className:"close-btn",onClick:()=>setShowSheet(false)},"✕ Close")
+      ),
       h("p",{style:{fontSize:12,color:"#666",lineHeight:1.7,marginBottom:10}},
         "1. Create sheet: French | Pronunciation | English | Topic",h("br"),
         "2. File → Share → Publish to web → CSV → Publish",h("br"),
         "3. Paste the published link below"
       ),
-      h("div",{className:"row",style:{gap:8}},
+      h("div",{style:{display:"flex",gap:8}},
         h("input",{value:sheetUrl,onChange:e=>setSheetUrl(e.target.value),placeholder:"https://docs.google.com/spreadsheets/d/...",style:{flex:1}}),
         h("button",{onClick:()=>fetchSheet(sheetUrl),disabled:!sheetUrl||sheetSt==="loading",style:{padding:"6px 14px",borderRadius:8,border:"none",background:color,color:"#fff",fontWeight:500,opacity:!sheetUrl||sheetSt==="loading"?0.5:1}},sheetSt==="loading"?"Loading...":"Load")
       ),
@@ -367,25 +349,27 @@ function App(){
       sheetSt==="error"&&h("div",{style:{fontSize:12,color:"#e85a2a",marginTop:8}},"⚠️ "+sheetErr),
     ),
 
-    // Topic header + manage button
-    h("div",{className:"row",style:{justifyContent:"space-between",marginBottom:6}},
+    // Topic header
+    h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}},
       h("div",{style:{fontSize:12,color:"#666"}},"topic"),
-      h("button",{onClick:()=>setShowTopics(p=>!p),style:{fontSize:12,padding:"3px 10px",borderRadius:999,border:"0.5px solid #ddd",background:showTopics?color:"#fff",color:showTopics?"#fff":"#666"}},"⚙️ Manage Topics")
+      h("button",{className:"pill"+(showTopics?" active":""),style:showTopics?{background:color,border:"none",color:"#fff"}:{},onClick:()=>{setShowTopics(p=>!p);setShowAddWord(false);setShowSheet(false)}},"⚙️ Manage Topics")
     ),
 
     // Topic pills
     h("div",{style:{display:"flex",flexWrap:"wrap",gap:6,marginBottom:".75rem"}},
-      topics.map(t=>h("button",{key:t,className:"topic-btn"+(topic===t?" active":""),style:topic===t?{background:COLORS[t]||"#2a85e8"}:{},onClick:()=>changeTopic(t)},t))
+      allTopics.filter(t=>cards.some(c=>c.t===t)||t==="All").map(t=>
+        h("button",{key:t,className:"topic-btn"+(topic===t?" active":""),style:topic===t?{background:COLORS[t]||"#2a85e8"}:{},onClick:()=>changeTopic(t)},t)
+      )
     ),
 
-    // Topic manager panel
+    // Topic Manager Panel
     showTopics && h("div",{className:"panel"},
-      h("div",{style:{fontSize:13,fontWeight:500,marginBottom:10,display:"flex",justifyContent:"space-between",alignItems:"center"}},
+      h("div",{className:"panel-title"},
         "⚙️ Manage Topics",
-        h("button",{onClick:()=>setShowTopics(false),style:{fontSize:13,padding:"2px 10px",borderRadius:999,border:"0.5px solid #ddd",background:"#fff",color:"#666",cursor:"pointer"}},"✕ Close")
+        h("button",{className:"close-btn",onClick:()=>setShowTopics(false)},"✕ Close")
       ),
-      [...PROTECTED,...customTopics.filter(t=>!PROTECTED.includes(t))].map(t=>
-        h("div",{key:t,className:"row",style:{marginBottom:6}},
+      topicList.map(t=>
+        h("div",{key:t,className:"topic-row-item"},
           editT===t
             ? h(React.Fragment,null,
                 h("input",{value:editName,onChange:e=>setEditName(e.target.value),onKeyDown:e=>e.key==="Enter"&&renameTopic(t,editName),autoFocus:true,style:{flex:1}}),
@@ -393,15 +377,15 @@ function App(){
                 h("button",{onClick:()=>setEditT(null),style:{padding:"4px 10px",borderRadius:8,border:"0.5px solid #ddd",background:"#fff",color:"#666"}},"✕")
               )
             : h(React.Fragment,null,
-                h("span",{style:{flex:1,fontSize:13,padding:"4px 8px",borderRadius:8,background:"#fff",border:"0.5px solid #eee"}}, t),
-                h("button",{onClick:()=>{setEditT(t);setEditName(t);},style:{padding:"4px 8px",borderRadius:8,border:"0.5px solid #ddd",background:"#fff",color:"#666"}},"✏️"),
-                h("button",{onClick:()=>deleteTopic(t),style:{padding:"4px 8px",borderRadius:8,border:"0.5px solid #ddd",background:"#fff",color:"#e85a2a"}},"🗑️")
+                h("span",null,t),
+                h("button",{className:"icon-btn",onClick:()=>{setEditT(t);setEditName(t)}},"✏️"),
+                h("button",{className:"icon-btn",style:{color:"#e85a2a"},onClick:()=>deleteTopic(t)},"🗑️")
               )
         )
       ),
-      h("div",{className:"row",style:{gap:8,marginTop:10}},
-        h("input",{value:newTopic,onChange:e=>setNewTopic(e.target.value),onKeyDown:e=>e.key==="Enter"&&addTopic(),placeholder:"New topic name...",style:{flex:1}}),
-        h("button",{onClick:addTopic,disabled:!newTopic.trim(),style:{padding:"6px 14px",borderRadius:8,border:"none",background:color,color:"#fff",opacity:newTopic.trim()?1:0.5}},"➕ Add")
+      h("div",{style:{display:"flex",gap:8,marginTop:10}},
+        h("input",{value:newTopicName,onChange:e=>setNewTopicName(e.target.value),onKeyDown:e=>e.key==="Enter"&&addTopic(),placeholder:"New topic name...",style:{flex:1}}),
+        h("button",{onClick:addTopic,disabled:!newTopicName.trim(),style:{padding:"6px 14px",borderRadius:8,border:"none",background:color,color:"#fff",opacity:newTopicName.trim()?1:0.5}},"➕ Add")
       )
     ),
 
@@ -415,9 +399,9 @@ function App(){
     ),
 
     // Card counter
-    h("div",{className:"row",style:{justifyContent:"space-between",marginBottom:".5rem"}},
+    h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:".5rem"}},
       h("span",{style:{fontSize:13,color:"#666"}},"Card "+(idx+1)+" of "+deck.length),
-      h("div",{className:"row",style:{gap:8}},
+      h("div",{style:{display:"flex",gap:8}},
         h("span",{className:"badge bk"},known.size+" ✓"),
         h("span",{className:"badge br"},review.size+" ↺")
       )
@@ -427,7 +411,7 @@ function App(){
     h("div",{className:"prog-bar"},h("div",{className:"prog-fill",style:{width:prog+"%",background:color}})),
 
     // Card
-    h("div",{className:"card-box"+(isK?" known":isR?" review":""),style:{border:`0.5px solid ${isK?"#2aae6e":isR?"#e8a82a":"#eee"}`},onClick:()=>setFlip(f=>!f)},
+    h("div",{className:"card-box",style:{border:`0.5px solid ${isK?"#2aae6e":isR?"#e8a82a":"#eee"}`},onClick:()=>setFlip(f=>!f)},
       h("span",{style:{position:"absolute",top:10,left:14,fontSize:11,padding:"2px 8px",borderRadius:999,background:(COLORS[card.t]||"#2a85e8")+"22",color:COLORS[card.t]||"#2a85e8"}},card.t),
       h("span",{style:{position:"absolute",top:14,right:16,fontSize:11,color:"#aaa"}},flip?"meaning":"tap to reveal"),
       !flip
@@ -447,21 +431,21 @@ function App(){
     ),
 
     // Mark buttons
-    h("div",{className:"row",style:{gap:10,marginTop:12}},
+    h("div",{style:{display:"flex",gap:10,marginTop:12}},
       h("button",{className:"mark-btn"+(isK?" k":""),onClick:()=>mark(isK?null:"k")},"✓"),
       h("button",{className:"mark-btn"+(isR?" r":""),onClick:()=>mark(isR?null:"r")},"↺")
     ),
 
     // Nav
-    h("div",{className:"row",style:{gap:10,marginTop:10}},
+    h("div",{style:{display:"flex",gap:10,marginTop:10}},
       h("button",{className:"nav-btn",onClick:()=>go(-1)},"←"),
-      h("button",{style:{padding:"8px 20px",fontSize:18,borderRadius:12,border:"0.5px solid #ddd",background:"#fff",color:"#888"},onClick:()=>{setDeck(d=>shuffle(d));setIdx(0);setFlip(false);}},"⇄"),
+      h("button",{style:{padding:"8px 20px",fontSize:18,borderRadius:12,border:"0.5px solid #ddd",background:"#fff",color:"#888"},onClick:()=>{setDeck(d=>shuffle(d));setIdx(0);setFlip(false)}},"⇄"),
       h("button",{className:"nav-btn",onClick:()=>go(1)},"→")
     )
   );
 }
 
-ReactDOM.render(h(App), document.getElementById("root"));
+ReactDOM.render(h(App),document.getElementById("root"));
 </script>
 </body>
 </html>
