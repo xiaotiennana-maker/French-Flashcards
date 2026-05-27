@@ -286,13 +286,17 @@ function App(){
   };
   const deleteTopic = (name)=>{
     if(!confirm(`Delete "${name}"? Cards will move to My Words.`)) return;
-    setCards(cs=>cs.map(c=>c.t===name?{...c,t:"My Words"}:c));
-    saveCustomTopics(customTopics.filter(t=>t!==name));
+    const updated = cards.map(c=>c.t===name?{...c,t:"My Words"}:c);
+    setCards(updated);
+    setDeck(mkDeck(topic,skip,known,updated));
+    const updatedCustom = customTopics.filter(t=>t!==name);
+    saveCustomTopics(updatedCustom);
     if(topic===name) changeTopic("All");
   };
 
-  const topicList = [...Object.keys(COLORS).filter(k=>k!=="All"),...customTopics.filter(t=>!Object.keys(COLORS).includes(t))];
-  const topicDropdown = [...topicList,"My Words"].filter((v,i,a)=>a.indexOf(v)===i);
+  const allTopics = ["All", ...Object.keys(COLORS).filter(k=>k!=="All"), ...customTopics.filter(t=>!Object.keys(COLORS).includes(t))];
+  const topicList = [...Object.keys(COLORS).filter(k=>k!=="All"), ...customTopics.filter(t=>!Object.keys(COLORS).includes(t))];
+  const topicDropdown = [...topicList, "My Words"].filter((v,i,a)=>a.indexOf(v)===i);
 
   return h("div",{id:"root"},
 
@@ -355,9 +359,9 @@ function App(){
       h("button",{className:"pill"+(showTopics?" active":""),style:showTopics?{background:color,border:"none",color:"#fff"}:{},onClick:()=>{setShowTopics(p=>!p);setShowAddWord(false);setShowSheet(false)}},"⚙️ Manage Topics")
     ),
 
-    // Topic pills
+    // Topic pills — show ALL topics including custom ones
     h("div",{style:{display:"flex",flexWrap:"wrap",gap:6,marginBottom:".75rem"}},
-      allTopics.filter(t=>cards.some(c=>c.t===t)||t==="All").map(t=>
+      allTopics.map(t=>
         h("button",{key:t,className:"topic-btn"+(topic===t?" active":""),style:topic===t?{background:COLORS[t]||"#2a85e8"}:{},onClick:()=>changeTopic(t)},t)
       )
     ),
