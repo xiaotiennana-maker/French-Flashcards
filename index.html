@@ -226,26 +226,65 @@ function App(){
 
   const fetchSheet = async (url) => {
     setSheetSt("loading"); setSheetErr("");
-    try{
+    try {
       if(!url.includes("google.com/spreadsheets")) throw new Error("Invalid URL.");
-      let csvUrl = url.includes("pub?output=csv") ? url : (() => {
-        const m=url.match(/\/d\/([\w-]+)/); if(!m) throw new Error("Invalid URL.");
-        return `https://docs.google.com/spreadsheets/d/${m[1]}/pub?output=csv`;
-      })();
-      const res=await fetch(csvUrl);
-      if(!res.ok) throw new Error("Could not fetch. Publish via File → Share → Publish to web → CSV.");
-      const text=await res.text();
-      const lines=text.trim().split("\n").slice(1);
-      const newCards=lines.map(line=>{
-        const cols=(line.match(/(".*?"|[^,]+)(?=,|$)/g)||[]).map(c=>c.replace(/^"|"$/g,"").trim());
-        return {fr:cols[0]||"",pr:cols[1]||"",en:cols[2]||"",t:cols[3]||"My Words"};
+
+      // Extract sheet ID and build CSV url
+      let csvUrl;
+      if(url.includes("/pub?output=csv")) {
+        csvUrl = url;
+      } else {
+        const m = url.match(/\/d\/e\/([\w-]+)/) || url.match(/\/d\/([\w-]+)/);
+        if(!m) throw new Error("Could not read the sheet ID from this URL.");
+        csvUrl = url.includes("/d/e/")
+          ? `https://docs.google.com/spreadsheets/d/e/${m[1]}/pub?output=csv`
+          : `https://docs.google.com/spreadsheets/d/${m[1]}/pub?output=csv`;
+      }
+
+      // Try fetch with no-cors mode fallback
+      let text = null;
+      try {
+        const res = await fetch(csvUrl, {mode:"cors"});
+        if(res.ok) text = await res.text();
+      } catch(e1) {}
+
+      // Try with allorigins proxy if direct fetch failed
+      if(!text) {
+        try {
+          const proxy = `https://api.allorigins.win/raw?url=${encodeURIComponent(csvUrl)}`;
+          const res = await fetch(proxy);
+          if(res.ok) text = await res.text();
+        } catch(e2) {}
+      }
+
+      // Try corsproxy.io as last resort
+      if(!text) {
+        try {
+          const proxy2 = `https://corsproxy.io/?${encodeURIComponent(csvUrl)}`;
+          const res = await fetch(proxy2);
+          if(res.ok) text = await res.text();
+        } catch(e3) {}
+      }
+
+      if(!text) throw new Error("Could not connect. Try: File → Share → Publish to web → select CSV → Publish, then copy the new link.");
+
+      const lines = text.trim().split("\n").slice(1);
+      const newCards = lines.map(line => {
+        const cols = (line.match(/(".*?"|[^,]+)(?=,|$)/g)||[]).map(c=>c.replace(/^"|"$/g,"").trim());
+        return {fr:cols[0]||"", pr:cols[1]||"", en:cols[2]||"", t:cols[3]||"My Words"};
       }).filter(c=>c.fr&&c.en);
-      if(!newCards.length) throw new Error("No cards found. Check columns: French, Pronunciation, English, Topic");
-      const combined=[...BASE,...newCards];
-      setCards(combined); setDeck(mkDeck(topic,skip,known,combined));
+
+      if(!newCards.length) throw new Error("No cards found. Make sure your sheet has data in columns: French, Pronunciation, English, Topic");
+
+      const combined = [...BASE, ...newCards];
+      setCards(combined);
+      setDeck(mkDeck(topic, skip, known, combined));
       setIdx(0); setFlip(false); setSheetSt("success");
-      localStorage.setItem("fr-sheet-url",url);
-    }catch(e){setSheetSt("error");setSheetErr(e.message);}
+      localStorage.setItem("fr-sheet-url", url);
+    } catch(e) {
+      setSheetSt("error");
+      setSheetErr(e.message);
+    }
   };
 
   const addTopic = () => {
@@ -321,7 +360,10 @@ function App(){
 
     // Topic manager panel
     showTopics && h("div",{className:"panel"},
-      h("div",{style:{fontSize:13,fontWeight:500,marginBottom:10}},"⚙️ Manage Topics"),
+      h("div",{style:{fontSize:13,fontWeight:500,marginBottom:10,display:"flex",justifyContent:"space-between",alignItems:"center"}},
+        "⚙️ Manage Topics",
+        h("button",{onClick:()=>setShowTopics(false),style:{fontSize:13,padding:"2px 10px",borderRadius:999,border:"0.5px solid #ddd",background:"#fff",color:"#666",cursor:"pointer"}},"✕ Close")
+      ),
       [...PROTECTED,...customTopics.filter(t=>!PROTECTED.includes(t))].map(t=>
         h("div",{key:t,className:"row",style:{marginBottom:6}},
           editT===t
