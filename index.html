@@ -51,7 +51,7 @@ input,select{font-family:inherit}
 .sm2-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}
 .sm2-btn{padding:12px 4px;border-radius:14px;border:none;font-size:13px;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:2px}
 .sm2-btn:active{transform:scale(.94)}
-.sm2-interval{font-size:10px;font-weight:400;opacity:.75;margin-top:2px}
+.sm2-iv{font-size:10px;font-weight:400;opacity:.75;margin-top:2px}
 .btn-again{background:#ffe5e5;color:#e85a2a}
 .btn-hard{background:#fff3e0;color:#e8852a}
 .btn-good{background:#e6f9f0;color:#2aae6e}
@@ -74,11 +74,11 @@ input,select{font-family:inherit}
 .box{background:#fff;border-radius:20px;box-shadow:0 2px 12px rgba(0,0,0,.07);padding:14px;margin-bottom:14px;border:1.5px solid #eee}
 .box-title{font-size:13px;font-weight:700;color:#555;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
 .box-toggle{font-size:12px;color:#2ab8c8;font-weight:600;background:none;border:none;padding:0}
-.qa-row{display:flex;gap:6px;margin-bottom:8px;overflow:hidden}
-.qa-input{flex:1;min-width:0;font-size:15px;padding:10px 12px;border:1.5px solid #eee;border-radius:12px;outline:none;background:#f8f8f8}
-.qa-input:focus{border-color:#2ab8c8;background:#fff}
-.qa-select{font-size:13px;padding:10px 6px;border:1.5px solid #eee;border-radius:12px;outline:none;background:#f8f8f8;color:#555;width:110px;flex-shrink:0}
-.qa-add-btn{padding:10px 18px;border-radius:12px;border:none;background:#2ab8c8;color:#fff;font-size:18px;font-weight:700;flex-shrink:0}
+.field{display:block;width:100%;font-size:15px;padding:10px 12px;border:1.5px solid #eee;border-radius:12px;outline:none;background:#f8f8f8;margin-bottom:8px}
+.field:focus{border-color:#2ab8c8;background:#fff}
+.qa-row{display:flex;gap:6px}
+.qa-select{font-size:13px;padding:10px 6px;border:1.5px solid #eee;border-radius:12px;outline:none;background:#f8f8f8;color:#555;flex:1}
+.qa-add-btn{padding:10px 18px;border-radius:12px;border:none;background:#2ab8c8;color:#fff;font-size:16px;font-weight:700;flex:1}
 .qa-add-btn:active{transform:scale(.93)}
 .qa-msg{font-size:12px;text-align:center;margin-top:6px;font-weight:500}
 .mw-row{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1.5px solid #eee;border-radius:12px;background:#f8f8f8;margin-bottom:6px}
@@ -107,12 +107,10 @@ input,select{font-family:inherit}
 <script>
 const {useState,useEffect,useCallback,createElement:h,Fragment}=React;
 
-// ── Colors ──
 const BC={"Everyday":"#d4a07a","Months & Days":"#96b88a","Numbers":"#c8a882","Classroom":"#d4bc72","Adjectives":"#d49a8a","Verbs":"#88bbc8","Family & Home":"#d4b08a","City & Transport":"#a0aec8","My Words":"#2aae6e"};
 const CC=["#2ab8c8","#e8855a","#16a085","#9b2ae8","#e82a7a","#2ab8e8","#e86a2a","#5a8ae8"];
 const gc=(t,ct)=>BC[t]||(CC[ct.indexOf(t)%CC.length]||"#2ab8c8");
 
-// ── Vocab ──
 const BASE=[
   {fr:"bonjour",pr:"bohn-ZHOOR",en:"hello / good day",t:"Everyday"},
   {fr:"merci",pr:"mehr-SEE",en:"thank you",t:"Everyday"},
@@ -210,11 +208,8 @@ const BASE=[
   {fr:"la poste",pr:"lah POST",en:"the post office",t:"City & Transport"},
 ];
 
-// ── Storage ──
 const lsGet=(k,d)=>{try{const v=localStorage.getItem(k);return v!=null?JSON.parse(v):d}catch{return d}};
 const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}};
-
-// ── SM-2 ──
 const todayN=()=>Math.floor(Date.now()/86400000);
 const initSR=()=>({ease:2.5,interval:0,rep:0,due:todayN()});
 const sm2=(sr,q)=>{
@@ -226,59 +221,57 @@ const sm2=(sr,q)=>{
   return{ease,interval,rep,due:todayN()+Math.max(1,interval)};
 };
 const ivLbl=(sr,q)=>{const d=sm2(sr,q).interval;return d<7?d+"d":d<30?Math.round(d/7)+"w":Math.round(d/30)+"mo";};
-
-// ── SR from localStorage directly ──
 const getSR=fr=>{const m=lsGet("fr2-sr",{});return m[fr]||initSR();};
 const saveSR=(fr,sr)=>{const m=lsGet("fr2-sr",{});m[fr]=sr;lsSet("fr2-sr",m);};
-
-// ── Speech ──
+const shuf=a=>{const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]]}return b;};
 const speak=t=>{if(!window.speechSynthesis)return;window.speechSynthesis.cancel();setTimeout(()=>{const u=new SpeechSynthesisUtterance(t);u.lang="fr-FR";u.rate=.85;window.speechSynthesis.speak(u);},50);};
 
-// ── Shuffle ──
-const shuf=a=>{const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]]}return b;};
-
-// ── Add Word Form (separate component to prevent re-render) ──
-function AddWordForm({ddTopics,onAdd}){
+// Separate component so typing doesn't re-render the whole app
+function AddWordForm({topics, onAdd}){
   const [fr,setFr]=useState("");
   const [pr,setPr]=useState("");
   const [en,setEn]=useState("");
-  const [t,setT]=useState("My Words");
+  const [t,setT]=useState(topics[0]||"My Words");
   const [msg,setMsg]=useState("");
-  const add=()=>{
+  const submit=()=>{
     if(!fr.trim()||!en.trim()){setMsg("⚠️ French & English required");setTimeout(()=>setMsg(""),2000);return;}
-    onAdd({fr:fr.trim(),pr:pr.trim(),en:en.trim(),t:t||"My Words"});
+    onAdd({fr:fr.trim(),pr:pr.trim(),en:en.trim(),t});
     setFr("");setPr("");setEn("");
     setMsg("✅ Added!");setTimeout(()=>setMsg(""),2000);
   };
   return h("div",{className:"box"},
     h("div",{className:"box-title"},"➕ Add a word"),
-    h("input",{className:"qa-input",style:{fontWeight:500,marginBottom:8,display:"block",width:"100%"},
-      placeholder:"🇫🇷 French *",value:fr,onChange:e=>setFr(e.target.value),onKeyDown:e=>{if(e.key==="Enter")add();}}),
-    h("input",{className:"qa-input",style:{marginBottom:8,display:"block",width:"100%"},
-      placeholder:"🔊 Pronunciation (optional)",value:pr,onChange:e=>setPr(e.target.value),onKeyDown:e=>{if(e.key==="Enter")add();}}),
-    h("input",{className:"qa-input",style:{marginBottom:8,display:"block",width:"100%"},
-      placeholder:"🇬🇧 English *",value:en,onChange:e=>setEn(e.target.value),onKeyDown:e=>{if(e.key==="Enter")add();}}),
+    h("input",{className:"field",placeholder:"🇫🇷 French *",value:fr,onChange:e=>setFr(e.target.value),onKeyDown:e=>{if(e.key==="Enter")submit();}}),
+    h("input",{className:"field",placeholder:"🔊 Pronunciation (optional)",value:pr,onChange:e=>setPr(e.target.value),onKeyDown:e=>{if(e.key==="Enter")submit();}}),
+    h("input",{className:"field",placeholder:"🇬🇧 English *",value:en,onChange:e=>setEn(e.target.value),onKeyDown:e=>{if(e.key==="Enter")submit();}}),
     h("div",{className:"qa-row"},
-      h("select",{className:"qa-select",style:{flex:1,width:"auto"},value:t,onChange:e=>setT(e.target.value)},
-        ddTopics.map(tp=>h("option",{key:tp,value:tp},tp))
-      ),
-      h("button",{className:"qa-add-btn",style:{flex:1},onClick:add},"➕ Add")
+      h("select",{className:"qa-select",value:t,onChange:e=>setT(e.target.value)},topics.map(tp=>h("option",{key:tp,value:tp},tp))),
+      h("button",{className:"qa-add-btn",onClick:submit},"➕ Add")
     ),
     msg&&h("div",{className:"qa-msg",style:{color:msg.includes("✅")?"#2aae6e":"#e85a2a"}},msg)
   );
 }
+
 function TopicManager({ct,setCt,hb,setHb,cw,setCw,topic,setTopic,color}){
   const [open,setOpen]=useState(false);
   const [newN,setNewN]=useState("");
   const [editI,setEditI]=useState(null);
   const [editV,setEditV]=useState("");
   const [msg,setMsg]=useState(null);
-  const flash=(t,ok=true)=>{setMsg({t,ok});setTimeout(()=>setMsg(null),2000);};
+  const flash=(txt,ok=true)=>{setMsg({txt,ok});setTimeout(()=>setMsg(null),2000);};
   const actB=Object.keys(BC).filter(t=>!hb.includes(t));
   const remB=Object.keys(BC).filter(t=>hb.includes(t));
-  const add=()=>{const n=newN.trim();if(!n)return;if(ct.includes(n)||BC[n])return flash("Already exists",false);setCt(p=>[...p,n]);setNewN("");flash('"'+n+'" added');};
+  const addT=()=>{const n=newN.trim();if(!n)return;if(ct.includes(n)||BC[n])return flash("Already exists",false);setCt(p=>[...p,n]);setNewN("");flash('"'+n+'" added');};
   const startE=i=>{setEditI(i);setEditV(ct[i]);};
-  const saveE=i=>{const n=editV.trim(),old=ct[i];if(!n||n===old){setEditI(null);return;}if(ct.includes(n)||BC[n])return flash("Name taken",false);setCw(w=>w.map(c=>c.t===old?{...c,t:n}:c));setCt(p=>p.map((v,j)=>j===i?n:v));if(topic===old)setTopic(n);setEditI(null);flash("Renamed");};
+  const saveE=i=>{
+    const n=editV.trim(),old=ct[i];
+    if(!n||n===old){setEditI(null);return;}
+    if(ct.includes(n)||BC[n])return flash("Name taken",false);
+    setCw(w=>w.map(c=>c.t===old?{...c,t:n}:c));
+    setCt(p=>p.map((v,j)=>j===i?n:v));
+    if(topic===old)setTopic(n);
+    setEditI(null);flash("Renamed");
+  };
   const delC=i=>{const name=ct[i];setCw(w=>w.map(c=>c.t===name?{...c,t:"My Words"}:c));setCt(p=>p.filter((_,j)=>j!==i));if(topic===name)setTopic("All");flash('"'+name+'" deleted');};
   const delB=t=>{setHb(p=>[...p,t]);if(topic===t)setTopic("All");flash('"'+t+'" removed');};
   const restB=t=>{setHb(p=>p.filter(x=>x!==t));flash('"'+t+'" restored');};
@@ -300,41 +293,46 @@ function TopicManager({ct,setCt,hb,setHb,cw,setCw,topic,setTopic,color}){
       ct.length===0
         ?h("div",{style:{fontSize:13,color:"#bbb",padding:"8px 0"}},"No custom topics yet")
         :ct.map((t,i)=>h("div",{key:t,className:"mw-row"},
-            editI===i
-              ?h(Fragment,null,
-                h("input",{className:"qa-input",autoFocus:true,style:{flex:1,fontSize:14,padding:"4px 8px"},value:editV,onChange:e=>setEditV(e.target.value),onKeyDown:e=>{if(e.key==="Enter")saveE(i);if(e.key==="Escape")setEditI(null);}}),
-                h("button",{className:"save-btn",onClick:()=>saveE(i)},"✓"),
-                h("button",{className:"cancel-btn",onClick:()=>setEditI(null)},"✕")
-              )
-              :h(Fragment,null,
-                h("div",{className:"dot",style:{background:color(t)}}),
-                h("span",{className:"mw-fr",style:{fontWeight:500}},t),
-                h("span",{style:{fontSize:11,color:"#ccc"}},cw.filter(c=>c.t===t).length+" words"),
-                h("button",{className:"edit-btn",onClick:()=>startE(i)},"✏️"),
-                h("button",{className:"mw-del",onClick:()=>delC(i)},"🗑")
-              )
-          )),
+          editI===i
+            ?h(Fragment,null,
+              h("input",{className:"field",style:{flex:1,marginBottom:0,fontSize:14,padding:"4px 8px"},autoFocus:true,value:editV,onChange:e=>setEditV(e.target.value),onKeyDown:e=>{if(e.key==="Enter")saveE(i);if(e.key==="Escape")setEditI(null);}}),
+              h("button",{className:"save-btn",onClick:()=>saveE(i)},"✓"),
+              h("button",{className:"cancel-btn",onClick:()=>setEditI(null)},"✕")
+            )
+            :h(Fragment,null,
+              h("div",{className:"dot",style:{background:color(t)}}),
+              h("span",{className:"mw-fr",style:{fontWeight:500}},t),
+              h("span",{style:{fontSize:11,color:"#ccc"}},cw.filter(c=>c.t===t).length+" words"),
+              h("button",{className:"edit-btn",onClick:()=>startE(i)},"✏️"),
+              h("button",{className:"mw-del",onClick:()=>delC(i)},"🗑")
+            )
+        )),
       h("div",{className:"qa-row",style:{marginTop:8}},
-        h("input",{className:"qa-input",placeholder:"New topic name…",value:newN,onChange:e=>setNewN(e.target.value),onKeyDown:e=>{if(e.key==="Enter")add();}}),
-        h("button",{className:"qa-add-btn",onClick:add},"➕")
+        h("input",{className:"qa-select",style:{flex:2,fontSize:14,padding:"10px 12px"},placeholder:"New topic name…",value:newN,onChange:e=>setNewN(e.target.value),onKeyDown:e=>{if(e.key==="Enter")addT();}}),
+        h("button",{className:"qa-add-btn",onClick:addT},"➕")
       ),
-      msg&&h("div",{className:"qa-msg",style:{color:msg.ok?"#2aae6e":"#e85a2a"}},msg.t)
+      msg&&h("div",{className:"qa-msg",style:{color:msg.ok?"#2aae6e":"#e85a2a"}},msg.txt)
     )
   );
 }
 
-// ── App ──
 function App(){
   const [cw,setCw]=useState(()=>lsGet("fr2-words",[]));
   const [ct,setCt]=useState(()=>lsGet("fr2-custom-topics",[]));
   const [hb,setHb]=useState(()=>lsGet("fr2-hidden-builtin",[]));
   const [topic,setTopic]=useState("All");
+  const [mode,setMode]=useState("flash");
+  const [skipKnown,setSkipKnown]=useState(false);
+  const [onlyKnown,setOnlyKnown]=useState(false);
+  const [deck,setDeck]=useState([]);
+  const [idx,setIdx]=useState(0);
+  const [flipped,setFlipped]=useState(false);
+  const [showMW,setShowMW]=useState(false);
   const [choices,setChoices]=useState([]);
   const [lChoices,setLChoices]=useState([]);
   const [chosen,setChosen]=useState(null);
   const [lRevealed,setLRevealed]=useState(false);
   const [score,setScore]=useState({r:0,w:0});
-  const [tick,setTick]=useState(0);
 
   useEffect(()=>lsSet("fr2-words",cw),[cw]);
   useEffect(()=>lsSet("fr2-custom-topics",ct),[ct]);
@@ -346,19 +344,17 @@ function App(){
   const ddTopics=[...Object.keys(BC).filter(t=>!hb.includes(t)),...ct];
   const dueCount=allCards.filter(c=>getSR(c.fr).due<=todayN()).length;
 
-  const buildDeck=useCallback((t,ac,sk,ok)=>{
+  const buildDeck=(t,ac,sk,ok)=>{
     let pool=t==="All"?[...ac]:ac.filter(c=>c.t===t);
     if(sk) pool=pool.filter(c=>{const sr=getSR(c.fr);return sr.rep===0||sr.due<=todayN();});
     else if(ok) pool=pool.filter(c=>{const sr=getSR(c.fr);return sr.rep>0&&sr.due>todayN();});
-    const due=shuf(pool.filter(c=>getSR(c.fr).due<=todayN()));
-    const rest=shuf(pool.filter(c=>getSR(c.fr).due>todayN()));
-    return[...due,...rest];
-  },[tick]);
+    return [...shuf(pool.filter(c=>getSR(c.fr).due<=todayN())),...shuf(pool.filter(c=>getSR(c.fr).due>todayN()))];
+  };
 
   useEffect(()=>{
-    const d=buildDeck(topic,allCards,skipKnown,onlyKnown);
-    setDeck(d);setIdx(0);setFlipped(false);setChosen(null);setLRevealed(false);
-  },[topic,cw,hb,ct,skipKnown,onlyKnown,tick]);
+    setDeck(buildDeck(topic,allCards,skipKnown,onlyKnown));
+    setIdx(0);setFlipped(false);setChosen(null);setLRevealed(false);
+  },[topic,cw,hb,ct,skipKnown,onlyKnown]);
 
   const card=deck[idx];
   const sr=card?getSR(card.fr):initSR();
@@ -382,11 +378,10 @@ function App(){
   const rate=q=>{
     if(!card)return;
     saveSR(card.fr,sm2(getSR(card.fr),q));
-    setTick(t=>t+1);
     advance(q>=2);
   };
 
-  const mkChoices=(c,pool,field)=>{
+  const mkCh=(c,pool,field)=>{
     if(!c)return[];
     const full=pool.length<4?allCards:pool;
     return shuf([c[field],...shuf(full.filter(x=>x.fr!==c.fr)).slice(0,3).map(x=>x[field])]);
@@ -395,8 +390,8 @@ function App(){
   useEffect(()=>{
     if(!card)return;
     const pool=topic==="All"?allCards:allCards.filter(c=>c.t===topic);
-    if(mode==="mc-fe"||mode==="mc-ef") setChoices(mkChoices(card,pool,mode==="mc-fe"?"en":"fr"));
-    if(mode==="listen") setLChoices(mkChoices(card,pool,"fr"));
+    if(mode==="mc-fe"||mode==="mc-ef") setChoices(mkCh(card,pool,mode==="mc-fe"?"en":"fr"));
+    if(mode==="listen") setLChoices(mkCh(card,pool,"fr"));
     setChosen(null);setLRevealed(false);
   },[idx,mode,card]);
 
@@ -409,11 +404,7 @@ function App(){
     setTimeout(()=>advance(ok),800);
   };
 
-  const addWord=w=>{setCw(p=>[...p,w]);};
-
-  const AddWord=()=>h(AddWordForm,{ddTopics,onAdd:addWord});
-
-  const Header=()=>h("div",{className:"header"},
+  const Header=h("div",{className:"header"},
     h("div",{className:"header-top"},
       h("div",{className:"app-title"},"🇫🇷 French Cards"),
       h("div",{className:"header-stats"},
@@ -426,36 +417,7 @@ function App(){
     )
   );
 
-  const AddWord=()=>h("div",{className:"box"},
-    h("div",{className:"box-title"},"➕ Add a word"),
-    h("input",{
-      className:"qa-input",style:{fontWeight:500,marginBottom:8,display:"block",width:"100%"},
-      placeholder:"🇫🇷 French *",value:qaFr,
-      onChange:e=>setQaFr(e.target.value),
-      onKeyDown:e=>{if(e.key==="Enter")addWord();}
-    }),
-    h("input",{
-      className:"qa-input",style:{marginBottom:8,display:"block",width:"100%"},
-      placeholder:"🔊 Pronunciation (optional)",value:qaPr,
-      onChange:e=>setQaPr(e.target.value),
-      onKeyDown:e=>{if(e.key==="Enter")addWord();}
-    }),
-    h("input",{
-      className:"qa-input",style:{marginBottom:8,display:"block",width:"100%"},
-      placeholder:"🇬🇧 English *",value:qaEn,
-      onChange:e=>setQaEn(e.target.value),
-      onKeyDown:e=>{if(e.key==="Enter")addWord();}
-    }),
-    h("div",{className:"qa-row"},
-      h("select",{className:"qa-select",style:{flex:1,width:"auto"},value:qaT,onChange:e=>setQaT(e.target.value)},
-        ddTopics.map(t=>h("option",{key:t,value:t},t))
-      ),
-      h("button",{className:"qa-add-btn",style:{flex:1},onClick:addWord},"➕ Add")
-    ),
-    qaMsg&&h("div",{className:"qa-msg",style:{color:qaMsg.includes("✅")?"#2aae6e":"#e85a2a"}},qaMsg)
-  );
-
-  const MyWords=()=>cw.length>0?h("div",{className:"box"},
+  const MyWords=cw.length>0?h("div",{className:"box"},
     h("div",{className:"box-title"},"📝 My Words ("+cw.length+")",h("button",{className:"box-toggle",onClick:()=>setShowMW(s=>!s)},showMW?"Hide":"Show")),
     showMW&&cw.map((w,i)=>h("div",{key:i,className:"mw-row"},
       h("span",{className:"mw-fr"},w.fr),
@@ -465,50 +427,51 @@ function App(){
     ))
   ):null;
 
+  const TM=h(TopicManager,{ct,setCt,hb,setHb,cw,setCw,topic,setTopic,color});
+  const AW=h(AddWordForm,{topics:ddTopics,onAdd:w=>setCw(p=>[...p,w])});
+
   // Done screen
   if(deck.length===0){
-    const stillWeak=(topic==="All"?allCards:allCards.filter(c=>c.t===topic)).filter(c=>{const sr=getSR(c.fr);return sr.rep===0||sr.due<=todayN();});
-    const known=(topic==="All"?allCards:allCards.filter(c=>c.t===topic)).filter(c=>{const sr=getSR(c.fr);return sr.rep>0&&sr.due>todayN();});
-    return h(Fragment,null,h(Header),h("div",{className:"main"},
-      h("div",{className:"done-wrap"},
-        h("div",{className:"done-emoji"},"🎉"),
-        h("div",{className:"done-title"},"All done!"),
-        h("div",{className:"done-sub"},"Great session. Come back tomorrow for your next review."),
-        stillWeak.length>0&&h("button",{className:"done-btn",onClick:()=>{setDeck(shuf(stillWeak));setIdx(0);}},
-          "Practice weak words ("+stillWeak.length+")"
+    const pool=topic==="All"?allCards:allCards.filter(c=>c.t===topic);
+    const weak=pool.filter(c=>{const sr=getSR(c.fr);return sr.rep===0||sr.due<=todayN();});
+    const known=pool.filter(c=>{const sr=getSR(c.fr);return sr.rep>0&&sr.due>todayN();});
+    return h(Fragment,null,Header,
+      h("div",{className:"main"},
+        h("div",{className:"done-wrap"},
+          h("div",{className:"done-emoji"},"🎉"),
+          h("div",{className:"done-title"},"All done!"),
+          h("div",{className:"done-sub"},"Great session. Come back tomorrow for your next review."),
+          weak.length>0&&h("button",{className:"done-btn",onClick:()=>{setDeck(shuf(weak));setIdx(0);}},
+            "Practice weak words ("+weak.length+")"
+          ),
+          known.length>0&&h("button",{className:"done-btn2",onClick:()=>{setDeck(shuf(known));setIdx(0);}},
+            "Review known words ("+known.length+")"
+          )
         ),
-        known.length>0&&h("button",{className:"done-btn2",onClick:()=>{setDeck(shuf(known));setIdx(0);}},
-          "Review known words ("+known.length+")"
-        )
-      ),
-      h(AddWord),h(MyWords),
-      h(TopicManager,{ct,setCt,hb,setHb,cw,setCw,topic,setTopic,color})
-    ));
+        AW,MyWords,TM
+      )
+    );
   }
 
   return h(Fragment,null,
-    h(Header),
+    Header,
     h("div",{className:"main"},
-      // Mode bar
       h("div",{className:"mode-bar"},
         [["flash","🃏 Flash"],["mc-fe","FR→EN"],["mc-ef","EN→FR"],["listen","🎧 Listen"]].map(([m,l])=>
           h("button",{key:m,className:"mode-btn"+(mode===m?" on":""),onClick:()=>{setMode(m);setScore({r:0,w:0})}},l)
         )
       ),
-      // Filter toggles
       h("div",{className:"filter-row"},
         h("button",{className:"filter-btn"+(skipKnown?" on-orange":""),onClick:()=>{setSkipKnown(s=>!s);if(!skipKnown)setOnlyKnown(false);}},
           (skipKnown?"✓ ":"")+"Skip known"),
         h("button",{className:"filter-btn"+(onlyKnown?" on-green":""),onClick:()=>{setOnlyKnown(s=>!s);if(!onlyKnown)setSkipKnown(false);}},
           (onlyKnown?"✓ ":"")+"Review known")
       ),
-      // Progress
       h("div",{className:"prog-wrap"},
         h("div",{className:"prog-labels"},h("span",null,(idx+1)+" / "+deck.length),h("span",{style:{color:topColor}},prog+"%")),
         h("div",{className:"prog"},h("div",{className:"prog-fill",style:{width:prog+"%",background:topColor}}))
       ),
 
-      // ── Flash mode ──
       mode==="flash"&&h(Fragment,null,
         h("div",{className:"card",onClick:()=>setFlipped(f=>!f)},
           h("div",{className:"card-tag",style:{background:color(card.t)}},card.t),
@@ -522,15 +485,11 @@ function App(){
             h("div",{className:"en-text"},card.en)
           )
         ),
-        h("div",{className:"speak-row"},
-          h("button",{className:"speak-btn",onClick:e=>{e.stopPropagation();speak(card.fr);}},"🔊")
-        ),
+        h("div",{className:"speak-row"},h("button",{className:"speak-btn",onClick:e=>{e.stopPropagation();speak(card.fr);}},"🔊")),
         flipped
           ?h("div",{className:"sm2-row"},
             [["Again","btn-again",0],["Hard","btn-hard",1],["Good","btn-good",2],["Easy","btn-easy",3]].map(([l,cls,q])=>
-              h("button",{key:q,className:"sm2-btn "+cls,onClick:()=>rate(q)},
-                l,h("span",{className:"sm2-interval"},ivLbl(sr,q))
-              )
+              h("button",{key:q,className:"sm2-btn "+cls,onClick:()=>rate(q)},l,h("span",{className:"sm2-iv"},ivLbl(sr,q)))
             )
           )
           :h("div",{className:"nav-row"},
@@ -540,7 +499,6 @@ function App(){
           )
       ),
 
-      // ── MC mode ──
       (mode==="mc-fe"||mode==="mc-ef")&&h(Fragment,null,
         h("div",{className:"quiz-card"},
           h("div",{className:"quiz-sub"},mode==="mc-fe"?"What does this mean?":"How do you say..."),
@@ -557,7 +515,6 @@ function App(){
         }))
       ),
 
-      // ── Listen mode ──
       mode==="listen"&&h(Fragment,null,
         h("div",{className:"quiz-card"},
           h("div",{className:"quiz-sub"},"Listen and pick the French word"),
@@ -578,8 +535,7 @@ function App(){
         }))
       ),
 
-      h(AddWord),h(MyWords),
-      h(TopicManager,{ct,setCt,hb,setHb,cw,setCw,topic,setTopic,color})
+      AW,MyWords,TM
     )
   );
 }
