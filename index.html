@@ -1,11 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<meta charset="UTF-8"/>
 <link rel="manifest" href="manifest.json"/>
-<link rel="apple-touch-icon" href="icon.png"/>
-<meta name="apple-mobile-web-app-capable" content="yes"/>
-<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
-<meta name="apple-mobile-web-app-title" content="French Cards"/><link rel="manifest" href="manifest.json"/>
 <link rel="apple-touch-icon" href="icon.png"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
@@ -266,7 +263,8 @@ function App(){
   const [customWords,setCustomWords]=useState(()=>ls("fr2-words",[]));
   const [customTopics,setCustomTopics]=useState(()=>ls("fr2-custom-topics",[]));
   const [hiddenBuiltIn,setHiddenBuiltIn]=useState(()=>ls("fr2-hidden-builtin",[]));
-  const [srTick,setSrTick]=useState(0); // just triggers re-render
+  const [skipKnown,setSkipKnown]=useState(false);
+  const [onlyKnown,setOnlyKnown]=useState(false);
   const [topic,setTopic]=useState("All");
   const [mode,setMode]=useState("flash");
   const [deck,setDeck]=useState([]);
@@ -291,13 +289,20 @@ function App(){
 
   const buildDeck=(t,ac)=>{
     let pool=t==="All"?[...ac]:ac.filter(c=>c.t===t);
+    if(skipKnown){
+      // only show cards never studied or marked Again/Hard
+      pool=pool.filter(c=>{const sr=getSRFresh(c.fr);return sr.rep===0||sr.due<=today();});
+    } else if(onlyKnown){
+      // only show cards rated Good/Easy at least once and not currently due
+      pool=pool.filter(c=>{const sr=getSRFresh(c.fr);return sr.rep>0&&sr.due>today();});
+    }
     return[...shuf(pool.filter(c=>getSRFresh(c.fr).due<=today())),...shuf(pool.filter(c=>getSRFresh(c.fr).due>today()))];
   };
 
   useEffect(()=>{
     setDeck(buildDeck(topic,allCards));
     setIdx(0);setFlipped(false);setChosen(null);setListenRevealed(false);
-  },[topic,customWords,hiddenBuiltIn,customTopics]);
+  },[topic,customWords,hiddenBuiltIn,customTopics,skipKnown,onlyKnown]);
 
   useEffect(()=>lsSave("fr2-words",customWords),[customWords]);
   useEffect(()=>lsSave("fr2-custom-topics",customTopics),[customTopics]);
@@ -403,9 +408,8 @@ function App(){
   // ── Done screen ──
   if(deck.length===0){
     // count remaining due cards (Again/Hard from this session)
-    const freshSR=ls("fr2-sr",{});
     const stillDue=(topic==="All"?allCards:allCards.filter(c=>c.t===topic))
-      .filter(c=>(freshSR[c.fr]||initSR()).due<=today());
+      .filter(c=>getSRFresh(c.fr).due<=today());
     return h(Fragment,null,
       h(Header),
       h("div",{className:"main"},
@@ -414,10 +418,7 @@ function App(){
           h("div",{className:"done-title"},"All done for today!"),
           h("div",{className:"done-sub"},"Come back tomorrow for your next review."),
           stillDue.length>0&&h("button",{className:"done-btn",onClick:()=>{
-            const sm=ls("fr2-sr",{});
-            setSrMap(sm);
-            setDeck(shuf(stillDue));
-            setIdx(0);
+            setDeck(shuf(stillDue));setIdx(0);
           }},"Practice unfamiliar words ("+stillDue.length+")")
         ),
         h(Bottom)
@@ -432,6 +433,16 @@ function App(){
         [["flash","🃏 Flash"],["mc-fe","FR→EN"],["mc-ef","EN→FR"],["listen","🎧 Listen"]].map(([m,l])=>
           h("button",{key:m,className:"mode-btn"+(mode===m?" on":""),onClick:()=>{setMode(m);setQScore({r:0,w:0})}},l)
         )
+      ),
+      h("div",{style:{display:"flex",gap:8,justifyContent:"flex-end",marginBottom:10}},
+        h("button",{
+          onClick:()=>{setSkipKnown(s=>{const n=!s;if(n)setOnlyKnown(false);return n;})},
+          style:{fontSize:12,fontWeight:600,padding:"5px 14px",borderRadius:99,border:"1.5px solid "+(skipKnown?"#e8855a":"#ddd"),background:skipKnown?"#fff3ee":"#fff",color:skipKnown?"#e8855a":"#aaa",transition:"all .15s"}
+        },(skipKnown?"✓ ":"")+"Skip known"),
+        h("button",{
+          onClick:()=>{setOnlyKnown(s=>{const n=!s;if(n)setSkipKnown(false);return n;})},
+          style:{fontSize:12,fontWeight:600,padding:"5px 14px",borderRadius:99,border:"1.5px solid "+(onlyKnown?"#2aae6e":"#ddd"),background:onlyKnown?"#e6f9f0":"#fff",color:onlyKnown?"#2aae6e":"#aaa",transition:"all .15s"}
+        },(onlyKnown?"✓ ":"")+"Review known")
       ),
       h("div",{className:"prog-wrap"},
         h("div",{className:"prog-labels"},h("span",null,(idx+1)+" / "+total),h("span",{style:{color:topicColor}},prog+"%")),
@@ -449,7 +460,7 @@ function App(){
         h("div",{className:"speak-row"},h("button",{className:"speak-btn",onClick:e=>{e.stopPropagation();speakFr(card.fr);}},"🔊")),
         flipped
           ?h("div",{className:"sm2-row"},[["Again","btn-again",0],["Hard","btn-hard",1],["Good","btn-good",2],["Easy","btn-easy",3]].map(([l,cls,q])=>h("button",{key:q,className:"sm2-btn "+cls,onClick:()=>rate(q)},l,h("span",{className:"interval"},ivLabel(sr,q)))))
-          :h("div",{className:"nav-row"},h("button",{className:"nav-btn",onClick:()=>{setFlipped(false);setIdx(i=>(i-1+deck.length)%deck.length);}},"←"),h("button",{className:"nav-btn",onClick:()=>{setFlipped(false);setIdx(i=>(i+1)%deck.length);}},"→"),h("button",{className:"shuf-btn",onClick:()=>{setDeck(buildDeck(topic,allCards,srMap));setIdx(0);}},"⇌"))
+          :h("div",{className:"nav-row"},h("button",{className:"nav-btn",onClick:()=>{setFlipped(false);setIdx(i=>(i-1+deck.length)%deck.length);}},"←"),h("button",{className:"nav-btn",onClick:()=>{setFlipped(false);setIdx(i=>(i+1)%deck.length);}},"→"),h("button",{className:"shuf-btn",onClick:()=>{setDeck(buildDeck(topic,allCards));setIdx(0);}},"⇌"))
       ),
 
       // ── MC ──
