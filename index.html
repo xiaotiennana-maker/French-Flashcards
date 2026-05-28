@@ -1,11 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<meta charset="UTF-8"/>
 <link rel="manifest" href="manifest.json"/>
-<link rel="apple-touch-icon" href="icon.png"/>
-<meta name="apple-mobile-web-app-capable" content="yes"/>
-<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
-<meta name="apple-mobile-web-app-title" content="French Cards"/><link rel="manifest" href="manifest.json"/>
 <link rel="apple-touch-icon" href="icon.png"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
@@ -326,7 +323,9 @@ function App(){
 
   const rate=q=>{
     if(!card)return;
-    const newMap={...srMap,[card.fr]:applySM2(getSR(card.fr),q)};
+    // always read fresh from localStorage to avoid stale state
+    const freshMap=ls("fr2-sr",{});
+    const newMap={...freshMap,[card.fr]:applySM2(getSR(card.fr),q)};
     setSrMap(newMap);
     lsSave("fr2-sr",newMap);
     advance(q>=2);
@@ -401,18 +400,29 @@ function App(){
   );
 
   // ── Done screen ──
-  if(deck.length===0)return h(Fragment,null,
-    h(Header),
-    h("div",{className:"main"},
-      h("div",{className:"done-screen"},
-        h("div",{className:"done-emoji"},"🎉"),
-        h("div",{className:"done-title"},"All done for today!"),
-        h("div",{className:"done-sub"},"Come back tomorrow for your next review."),
-        h("button",{className:"done-btn",onClick:()=>{setDeck(buildDeck(topic,allCards,srMap));setIdx(0);}},"Practice again anyway")
-      ),
-      h(Bottom)
-    )
-  );
+  if(deck.length===0){
+    // count remaining due cards (Again/Hard from this session)
+    const freshSR=ls("fr2-sr",{});
+    const stillDue=(topic==="All"?allCards:allCards.filter(c=>c.t===topic))
+      .filter(c=>(freshSR[c.fr]||initSR()).due<=today());
+    return h(Fragment,null,
+      h(Header),
+      h("div",{className:"main"},
+        h("div",{className:"done-screen"},
+          h("div",{className:"done-emoji"},"🎉"),
+          h("div",{className:"done-title"},"All done for today!"),
+          h("div",{className:"done-sub"},"Come back tomorrow for your next review."),
+          stillDue.length>0&&h("button",{className:"done-btn",onClick:()=>{
+            const sm=ls("fr2-sr",{});
+            setSrMap(sm);
+            setDeck(shuf(stillDue));
+            setIdx(0);
+          }},"Practice unfamiliar words ("+stillDue.length+")")
+        ),
+        h(Bottom)
+      )
+    );
+  }
 
   return h(Fragment,null,
     h(Header),
