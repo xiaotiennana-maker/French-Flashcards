@@ -1,11 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<meta charset="UTF-8"/>
 <link rel="manifest" href="manifest.json"/>
-<link rel="apple-touch-icon" href="icon.png"/>
-<meta name="apple-mobile-web-app-capable" content="yes"/>
-<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
-<meta name="apple-mobile-web-app-title" content="French Cards"/><link rel="manifest" href="manifest.json"/>
 <link rel="apple-touch-icon" href="icon.png"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
@@ -397,18 +394,12 @@ function App(){
     setSrMap(newMap);
     lsSave("fr2-sr",newMap); // save immediately
     if(q>=2){
-      // Good/Easy: remove from deck
+      // Good/Easy: remove from deck permanently
       const newDeck=deck.filter((_,i)=>i!==idx);
-      if(newDeck.length===0){
-        // all done for today
-        const d=buildDeck(topic,allCards,newMap);
-        setDeck(d);setIdx(0);
-      } else {
-        setDeck(newDeck);
-        setIdx(i=>Math.min(i,newDeck.length-1));
-      }
+      setDeck(newDeck);
+      setIdx(i=>Math.min(i,Math.max(newDeck.length-1,0)));
     } else {
-      // Again/Hard: move to end
+      // Again/Hard: move to end so it comes back
       const newDeck=[...deck.filter((_,i)=>i!==idx),card];
       setDeck(newDeck);
       setIdx(Math.min(idx,newDeck.length-1));
@@ -434,11 +425,29 @@ function App(){
     setChosen(null);setListenRevealed(false);
   },[idx,mode,card]);
 
+  const advanceAfterQuiz=(correct)=>{
+    if(correct){
+      // remove from deck
+      const newDeck=deck.filter((_,i)=>i!==idx);
+      setDeck(newDeck);
+      setIdx(i=>Math.min(i,Math.max(newDeck.length-1,0)));
+    } else {
+      // move to end
+      const newDeck=[...deck.filter((_,i)=>i!==idx),card];
+      setDeck(newDeck);
+      setIdx(Math.min(idx,newDeck.length-1));
+    }
+    setChosen(null);setListenRevealed(false);setFlipped(false);
+  };
+
   const pickChoice=c=>{
     if(chosen!==null)return;
     setChosen(c);
     const correct=mode==="mc-fe"?card.en:card.fr;
-    setQScore(s=>c===correct?{...s,r:s.r+1}:{...s,w:s.w+1});
+    const isCorrect=c===correct;
+    setQScore(s=>isCorrect?{...s,r:s.r+1}:{...s,w:s.w+1});
+    // auto-advance after short delay
+    setTimeout(()=>advanceAfterQuiz(isCorrect),800);
   };
 
   const addWord=()=>{
@@ -450,7 +459,31 @@ function App(){
   };
   const delWord=fr=>setCustomWords(p=>p.filter(w=>w.fr!==fr));
 
-  if(!card)return h("div",{style:{padding:40,textAlign:"center",color:"#aaa"}},"No cards in this topic.");
+  if(!card||deck.length===0)return h(Fragment,null,
+    h("div",{className:"header"},
+      h("div",{className:"header-top"},
+        h("div",{className:"app-title"},"🇫🇷 French Cards"),
+        h("div",{className:"header-stats"},
+          h("div",{className:"stat-pill stat-known"},allCards.length+" cards")
+        )
+      ),
+      h("div",{className:"topics-scroll"},
+        topicPills.map(t=>h("button",{key:t,className:"tp"+(topic===t?" on":""),
+          style:topic===t?{background:gc(t)}:{},onClick:()=>setTopic(t)},t))
+      )
+    ),
+    h("div",{className:"main"},
+      h("div",{style:{textAlign:"center",padding:"60px 20px"}},
+        h("div",{style:{fontSize:64,marginBottom:16}},"🎉"),
+        h("div",{style:{fontSize:22,fontWeight:700,marginBottom:8,color:"#2a1e12"}},"All done for today!"),
+        h("div",{style:{fontSize:14,color:"#aaa",marginBottom:32}},"Come back tomorrow for your next review."),
+        h("button",{
+          onClick:()=>{const d=buildDeck(topic,allCards,srMap);setDeck(d);setIdx(0);},
+          style:{padding:"12px 28px",borderRadius:14,border:"none",background:"#2ab8c8",color:"#fff",fontSize:16,fontWeight:700}
+        },"Practice again anyway")
+      )
+    )
+  );
 
   return h(Fragment,null,
     h("div",{className:"header"},
@@ -517,8 +550,7 @@ function App(){
             if(chosen!==null){if(c===correct)cls+=" correct";else if(c===chosen)cls+=" wrong";}
             return h("button",{key:i,className:cls,onClick:()=>pickChoice(c)},c);
           })
-        ),
-        chosen!==null&&h("button",{className:"quiz-next",onClick:next},"Next →")
+        )
       ),
       mode==="listen"&&h(Fragment,null,
         h("div",{className:"quiz-card"},
@@ -533,12 +565,13 @@ function App(){
             if(listenRevealed){if(c===card.fr)cls+=" correct";else if(c===chosen)cls+=" wrong";}
             return h("button",{key:i,className:cls,onClick:()=>{
               if(listenRevealed)return;
+              const isCorrect=c===card.fr;
               setChosen(c);setListenRevealed(true);
-              setQScore(s=>c===card.fr?{...s,r:s.r+1}:{...s,w:s.w+1});
+              setQScore(s=>isCorrect?{...s,r:s.r+1}:{...s,w:s.w+1});
+              setTimeout(()=>advanceAfterQuiz(isCorrect),800);
             }},c);
           })
-        ),
-        listenRevealed&&h("button",{className:"quiz-next",onClick:next},"Next →")
+        )
       ),
       h("div",{className:"quick-add"},
         h("div",{className:"qa-title"},"➕ Add a word"),
