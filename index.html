@@ -237,7 +237,36 @@ const speak=t=>{if(!window.speechSynthesis)return;window.speechSynthesis.cancel(
 // ── Shuffle ──
 const shuf=a=>{const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]]}return b;};
 
-// ── Topic Manager ──
+// ── Add Word Form (separate component to prevent re-render) ──
+function AddWordForm({ddTopics,onAdd}){
+  const [fr,setFr]=useState("");
+  const [pr,setPr]=useState("");
+  const [en,setEn]=useState("");
+  const [t,setT]=useState("My Words");
+  const [msg,setMsg]=useState("");
+  const add=()=>{
+    if(!fr.trim()||!en.trim()){setMsg("⚠️ French & English required");setTimeout(()=>setMsg(""),2000);return;}
+    onAdd({fr:fr.trim(),pr:pr.trim(),en:en.trim(),t:t||"My Words"});
+    setFr("");setPr("");setEn("");
+    setMsg("✅ Added!");setTimeout(()=>setMsg(""),2000);
+  };
+  return h("div",{className:"box"},
+    h("div",{className:"box-title"},"➕ Add a word"),
+    h("input",{className:"qa-input",style:{fontWeight:500,marginBottom:8,display:"block",width:"100%"},
+      placeholder:"🇫🇷 French *",value:fr,onChange:e=>setFr(e.target.value),onKeyDown:e=>{if(e.key==="Enter")add();}}),
+    h("input",{className:"qa-input",style:{marginBottom:8,display:"block",width:"100%"},
+      placeholder:"🔊 Pronunciation (optional)",value:pr,onChange:e=>setPr(e.target.value),onKeyDown:e=>{if(e.key==="Enter")add();}}),
+    h("input",{className:"qa-input",style:{marginBottom:8,display:"block",width:"100%"},
+      placeholder:"🇬🇧 English *",value:en,onChange:e=>setEn(e.target.value),onKeyDown:e=>{if(e.key==="Enter")add();}}),
+    h("div",{className:"qa-row"},
+      h("select",{className:"qa-select",style:{flex:1,width:"auto"},value:t,onChange:e=>setT(e.target.value)},
+        ddTopics.map(tp=>h("option",{key:tp,value:tp},tp))
+      ),
+      h("button",{className:"qa-add-btn",style:{flex:1},onClick:add},"➕ Add")
+    ),
+    msg&&h("div",{className:"qa-msg",style:{color:msg.includes("✅")?"#2aae6e":"#e85a2a"}},msg)
+  );
+}
 function TopicManager({ct,setCt,hb,setHb,cw,setCw,topic,setTopic,color}){
   const [open,setOpen]=useState(false);
   const [newN,setNewN]=useState("");
@@ -300,18 +329,6 @@ function App(){
   const [ct,setCt]=useState(()=>lsGet("fr2-custom-topics",[]));
   const [hb,setHb]=useState(()=>lsGet("fr2-hidden-builtin",[]));
   const [topic,setTopic]=useState("All");
-  const [mode,setMode]=useState("flash");
-  const [skipKnown,setSkipKnown]=useState(false);
-  const [onlyKnown,setOnlyKnown]=useState(false);
-  const [deck,setDeck]=useState([]);
-  const [idx,setIdx]=useState(0);
-  const [flipped,setFlipped]=useState(false);
-  const [showMW,setShowMW]=useState(false);
-  const [qaFr,setQaFr]=useState("");
-  const [qaPr,setQaPr]=useState("");
-  const [qaEn,setQaEn]=useState("");
-  const [qaT,setQaT]=useState("My Words");
-  const [qaMsg,setQaMsg]=useState("");
   const [choices,setChoices]=useState([]);
   const [lChoices,setLChoices]=useState([]);
   const [chosen,setChosen]=useState(null);
@@ -392,13 +409,9 @@ function App(){
     setTimeout(()=>advance(ok),800);
   };
 
-  const addWord=()=>{
-    if(!qaFr.trim()||!qaEn.trim()){setQaMsg("⚠️ French & English required");setTimeout(()=>setQaMsg(""),2000);return;}
-    const w={fr:qaFr.trim(),pr:qaPr.trim(),en:qaEn.trim(),t:qaT||"My Words"};
-    setCw(p=>[...p,w]);
-    setQaFr("");setQaPr("");setQaEn("");
-    setQaMsg("✅ Added!");setTimeout(()=>setQaMsg(""),2000);
-  };
+  const addWord=w=>{setCw(p=>[...p,w]);};
+
+  const AddWord=()=>h(AddWordForm,{ddTopics,onAdd:addWord});
 
   const Header=()=>h("div",{className:"header"},
     h("div",{className:"header-top"},
