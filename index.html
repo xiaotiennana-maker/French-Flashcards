@@ -1,11 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<link rel="manifest" href="manifest.json"/>
-<link rel="apple-touch-icon" href="icon.png"/>
-<meta name="apple-mobile-web-app-capable" content="yes"/>
-<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
-<meta name="apple-mobile-web-app-title" content="French Cards"/>
+<meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0"/>
 <title>French Flashcards</title>
 <style>
@@ -359,7 +355,7 @@ function App(){
     hiddenBuiltIn.includes(c.t)&&BUILTIN_COLORS[c.t]?{...c,t:"My Words"}:c
   );
 
-  // active topic pills: built-ins not hidden + custom topics with cards + My Words if populated
+  // active topic pills: based on allCards, not deck
   const topicPills=["All",...Object.keys(BUILTIN_COLORS)
     .filter(t=>!hiddenBuiltIn.includes(t)&&allCards.some(c=>c.t===t)),
     ...customTopics.filter(t=>allCards.some(c=>c.t===t))
@@ -413,8 +409,25 @@ function App(){
     const newSR=applySM2(getSR(card.fr),q);
     const newMap={...srMap,[card.fr]:newSR};
     setSrMap(newMap);
-    lsSave("fr2-sr",newMap); // save immediately, don't wait for useEffect
-    next();
+    lsSave("fr2-sr",newMap);
+    // remove card from deck if rated Good or Easy (known), keep if Again/Hard
+    if(q>=2){
+      const newDeck=deck.filter((_,i)=>i!==idx);
+      if(newDeck.length===0){
+        // all done — rebuild with only due cards
+        const due=buildDeck(topic,allCards);
+        setDeck(due);setIdx(0);
+      } else {
+        setDeck(newDeck);
+        setIdx(i=>Math.min(i,newDeck.length-1));
+      }
+    } else {
+      // Again/Hard — move card to end of deck so it comes back
+      const newDeck=[...deck.filter((_,i)=>i!==idx),card];
+      setDeck(newDeck);
+      setIdx(i=>Math.min(i,newDeck.length-1));
+    }
+    setFlipped(false);setChosen(null);setListenRevealed(false);
   };
 
   const makeChoices=useCallback((card,pool,field)=>{
