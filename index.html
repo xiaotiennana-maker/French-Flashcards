@@ -11,7 +11,7 @@
 <title>French Flashcards</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f2e8d9;color:#2a1e12;min-height:100vh;padding-bottom:2rem}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f2e8d9;color:#2a1e12;min-height:100vh;padding-bottom:40vh}
 button{cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent}
 input,select{font-family:inherit}
 .header{background:#ede0cc;padding:12px 16px 0;position:sticky;top:0;z-index:100;box-shadow:0 1px 0 #d4c0a0}
@@ -415,32 +415,29 @@ function App(){
 
   const AddWord=()=>h("div",{className:"box"},
     h("div",{className:"box-title"},"➕ Add a word"),
+    h("input",{
+      className:"qa-input",style:{fontWeight:500,marginBottom:8,display:"block",width:"100%"},
+      placeholder:"🇫🇷 French *",value:qaFr,
+      onChange:e=>setQaFr(e.target.value),
+      onKeyDown:e=>{if(e.key==="Enter")addWord();}
+    }),
+    h("input",{
+      className:"qa-input",style:{marginBottom:8,display:"block",width:"100%"},
+      placeholder:"🔊 Pronunciation (optional)",value:qaPr,
+      onChange:e=>setQaPr(e.target.value),
+      onKeyDown:e=>{if(e.key==="Enter")addWord();}
+    }),
+    h("input",{
+      className:"qa-input",style:{marginBottom:8,display:"block",width:"100%"},
+      placeholder:"🇬🇧 English *",value:qaEn,
+      onChange:e=>setQaEn(e.target.value),
+      onKeyDown:e=>{if(e.key==="Enter")addWord();}
+    }),
     h("div",{className:"qa-row"},
-      h("input",{
-        className:"qa-input",style:{fontWeight:500},placeholder:"🇫🇷 French *",
-        value:qaFr,
-        onChange:e=>setQaFr(e.target.value),
-        onFocus:e=>setTimeout(()=>e.target.scrollIntoView({behavior:"smooth",block:"center"}),300),
-        onKeyDown:e=>{if(e.key==="Enter")addWord();}
-      }),
-      h("input",{
-        className:"qa-input",placeholder:"🔊 Pronunciation",
-        value:qaPr,
-        onChange:e=>setQaPr(e.target.value),
-        onFocus:e=>setTimeout(()=>e.target.scrollIntoView({behavior:"smooth",block:"center"}),300),
-        onKeyDown:e=>{if(e.key==="Enter")addWord();}
-      })
-    ),
-    h("div",{className:"qa-row"},
-      h("input",{
-        className:"qa-input",placeholder:"🇬🇧 English *",
-        value:qaEn,
-        onChange:e=>setQaEn(e.target.value),
-        onFocus:e=>setTimeout(()=>e.target.scrollIntoView({behavior:"smooth",block:"center"}),300),
-        onKeyDown:e=>{if(e.key==="Enter")addWord();}
-      }),
-      h("select",{className:"qa-select",value:qaT,onChange:e=>setQaT(e.target.value)},ddTopics.map(t=>h("option",{key:t,value:t},t))),
-      h("button",{className:"qa-add-btn",onClick:addWord},"➕")
+      h("select",{className:"qa-select",style:{flex:1,width:"auto"},value:qaT,onChange:e=>setQaT(e.target.value)},
+        ddTopics.map(t=>h("option",{key:t,value:t},t))
+      ),
+      h("button",{className:"qa-add-btn",style:{flex:1},onClick:addWord},"➕ Add")
     ),
     qaMsg&&h("div",{className:"qa-msg",style:{color:qaMsg.includes("✅")?"#2aae6e":"#e85a2a"}},qaMsg)
   );
