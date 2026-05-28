@@ -1,11 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<link rel="manifest" href="manifest.json"/>
-<link rel="apple-touch-icon" href="icon.png"/>
-<meta name="apple-mobile-web-app-capable" content="yes"/>
-<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
-<meta name="apple-mobile-web-app-title" content="French Cards"/>
+<meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0"/>
 <title>French Flashcards</title>
 <style>
@@ -217,10 +213,12 @@ const today=()=>Math.floor(Date.now()/86400000);
 const initSR=()=>({ease:2.5,interval:0,rep:0,due:today()});
 const applySM2=(sr,q)=>{
   let{ease,interval,rep}=sr;
-  if(q===0){rep=0;interval=1;}
-  else if(q===1){interval=Math.max(1,Math.round(interval*1.2));ease=Math.max(1.3,ease-.15);}
+  if(q===0){rep=0;interval=1;ease=Math.max(1.3,ease-.2);}
+  else if(q===1){rep=Math.max(1,rep);interval=Math.max(1,Math.round(interval*1.2));ease=Math.max(1.3,ease-.15);}
   else if(q===2){if(rep===0)interval=1;else if(rep===1)interval=6;else interval=Math.round(interval*ease);rep++;ease=Math.max(1.3,ease);}
   else{if(rep===0)interval=4;else if(rep===1)interval=10;else interval=Math.round(interval*ease*1.3);rep++;ease=Math.min(3.5,ease+.15);}
+  // ensure interval is at least 1 day for Good/Easy so card doesn't stay "due"
+  interval=Math.max(q>=2?1:1,interval);
   return{ease,interval,rep,due:today()+interval};
 };
 const ivLabel=(sr,q)=>{const d=applySM2(sr,q).interval;if(d<=1)return"<1d";if(d<7)return d+"d";if(d<30)return Math.round(d/7)+"w";return Math.round(d/30)+"mo";};
@@ -389,7 +387,10 @@ function App(){
   useEffect(()=>lsSave("fr2-words",customWords),[customWords]);
   useEffect(()=>lsSave("fr2-custom-topics",customTopics),[customTopics]);
   useEffect(()=>lsSave("fr2-hidden-builtin",hiddenBuiltIn),[hiddenBuiltIn]);
-  useEffect(()=>lsSave("fr2-sr",srMap),[srMap]);
+  // persist srMap immediately on every change
+  useEffect(()=>{
+    lsSave("fr2-sr",srMap);
+  },[srMap]);
 
   const card=deck[idx];
   const sr=card?getSR(card.fr):initSR();
@@ -405,7 +406,10 @@ function App(){
 
   const rate=q=>{
     if(!card)return;
-    setSrMap(m=>({...m,[card.fr]:applySM2(getSR(card.fr),q)}));
+    const newSR=applySM2(getSR(card.fr),q);
+    const newMap={...srMap,[card.fr]:newSR};
+    setSrMap(newMap);
+    lsSave("fr2-sr",newMap); // save immediately, don't wait for useEffect
     next();
   };
 
