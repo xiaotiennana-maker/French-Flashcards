@@ -1,25 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<link rel="manifest" href="manifest.json"/>
-<link rel="apple-touch-icon" href="icon.png"/>
-<meta name="apple-mobile-web-app-capable" content="yes"/>
-<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
-<meta name="apple-mobile-web-app-title" content="French Cards"/>
+<meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0"/>
 <title>French Flashcards</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-:root{--blue:#2a85e8;--green:#2aae6e;--orange:#e8852a;--red:#e85a2a}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#fdf3e7;color:#111;min-height:100vh;padding-bottom:2rem}
+:root{--blue:#2ab8c8;--green:#2aae6e;--orange:#4a3728;--red:#e85a2a}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f2e8d9;color:#2a1e12;min-height:100vh;padding-bottom:2rem}
 button{cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent}
 input,select{font-family:inherit}
-.header{background:#fef8f0;padding:12px 16px 0;position:sticky;top:0;z-index:100;box-shadow:0 1px 0 #f0dfc8}
+.header{background:#ede0cc;padding:12px 16px 0;position:sticky;top:0;z-index:100;box-shadow:0 1px 0 #d4c0a0}
 .header-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
 .app-title{font-size:17px;font-weight:700;letter-spacing:-.3px}
 .header-stats{display:flex;gap:8px;font-size:12px}
 .stat-pill{padding:3px 10px;border-radius:99px;font-weight:600}
-.stat-due{background:#fff3e0;color:#e8852a}
+.stat-due{background:#e8d5b0;color:#4a3728}
 .stat-known{background:#e6f9f0;color:#2aae6e}
 .topics-scroll{display:flex;gap:6px;overflow-x:auto;padding-bottom:10px;scrollbar-width:none}
 .topics-scroll::-webkit-scrollbar{display:none}
@@ -28,7 +24,7 @@ input,select{font-family:inherit}
 .main{padding:16px}
 .mode-bar{display:flex;gap:6px;margin-bottom:14px;background:#fff;border-radius:12px;padding:4px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
 .mode-btn{flex:1;font-size:12px;font-weight:600;padding:7px 4px;border-radius:9px;border:none;background:transparent;color:#999;transition:all .15s;text-align:center}
-.mode-btn.on{background:var(--blue);color:#fff;box-shadow:0 2px 8px rgba(42,133,232,.3)}
+.mode-btn.on{background:#2ab8c8;color:#fff;box-shadow:0 2px 8px rgba(42,184,200,.3)}
 .card{border-radius:24px;box-shadow:0 6px 30px rgba(0,0,0,.08);min-height:240px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;cursor:pointer;position:relative;background:#fff;user-select:none;padding:2rem 1.5rem;border:1.5px solid #eee;transition:transform .08s;margin-bottom:14px}
 .card:active{transform:scale(.98)}
 .card-tag{position:absolute;top:14px;left:16px;font-size:11px;padding:3px 10px;border-radius:99px;font-weight:600;color:#fff}
@@ -39,8 +35,8 @@ input,select{font-family:inherit}
 .en-small{font-size:15px;color:#bbb;text-align:center}
 .flip-hint{font-size:13px;color:#ccc;margin-top:4px}
 .speak-row{display:flex;justify-content:center;margin-bottom:12px}
-.speak-btn{padding:10px 32px;border-radius:99px;border:none;background:var(--orange);color:#fff;font-size:24px;transition:transform .1s,background .15s;box-shadow:0 4px 14px rgba(232,133,42,.3)}
-.speak-btn:active{background:#c46a1a;transform:scale(.93)}
+.speak-btn{padding:10px 32px;border-radius:99px;border:none;background:#e8855a;color:#fff;font-size:24px;transition:transform .1s,background .15s;box-shadow:0 2px 8px rgba(232,133,90,.4)}
+.speak-btn:active{background:#d06840;transform:scale(.93)}
 .sm2-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}
 .sm2-btn{padding:12px 4px;border-radius:14px;border:none;font-size:13px;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:2px;transition:transform .1s}
 .sm2-btn:active{transform:scale(.94)}
@@ -61,9 +57,9 @@ input,select{font-family:inherit}
 .qa-title{font-size:13px;font-weight:700;color:#555;margin-bottom:10px}
 .qa-row{display:flex;gap:6px}
 .qa-input{flex:1;font-size:15px;padding:10px 12px;border:1.5px solid #eee;border-radius:12px;outline:none;background:#f8f8f8;transition:border .15s}
-.qa-input:focus{border-color:var(--blue);background:#fff}
+.qa-input:focus{border-color:#2ab8c8;background:#fff}
 .qa-select{font-size:13px;padding:10px 8px;border:1.5px solid #eee;border-radius:12px;outline:none;background:#f8f8f8;color:#555;max-width:130px}
-.qa-add-btn{padding:10px 18px;border-radius:12px;border:none;background:var(--blue);color:#fff;font-size:18px;font-weight:700;transition:transform .1s}
+.qa-add-btn{padding:10px 18px;border-radius:12px;border:none;background:#2ab8c8;color:#fff;font-size:18px;font-weight:700;transition:transform .1s}
 .qa-add-btn:active{transform:scale(.93)}
 .qa-msg{font-size:12px;text-align:center;margin-top:6px;font-weight:500}
 .box{background:#fff;border-radius:20px;box-shadow:0 2px 12px rgba(0,0,0,.07);padding:14px;margin-bottom:14px;border:1.5px solid #eee}
@@ -92,7 +88,7 @@ input,select{font-family:inherit}
 .mc-btn.wrong{background:#ffe5e5;border-color:#e85a2a;color:#e85a2a}
 .quiz-score{display:flex;gap:10px;justify-content:center;font-size:13px;font-weight:600;margin-bottom:10px}
 .qs-right{color:#2aae6e}.qs-wrong{color:#e85a2a}
-.quiz-next{width:100%;padding:14px;border-radius:14px;border:none;background:var(--blue);color:#fff;font-size:16px;font-weight:700;margin-bottom:10px}
+.quiz-next{width:100%;padding:14px;border-radius:14px;border:none;background:#2ab8c8;color:#fff;font-size:16px;font-weight:700;margin-bottom:10px}
 .listen-icon{font-size:64px;cursor:pointer;transition:transform .1s}
 .listen-icon:active{transform:scale(.93)}
 .play-again{padding:6px 18px;border:1.5px solid #eee;border-radius:99px;background:#fff;font-size:13px;color:#999}
@@ -105,7 +101,7 @@ input,select{font-family:inherit}
 <script>
 const {useState,useEffect,useCallback,createElement:h,Fragment}=React;
 
-const BUILTIN_COLORS={"Everyday":"#e85a2a","Months & Days":"#2aae6e","Numbers":"#9b2ae8","Classroom":"#e8a82a","Adjectives":"#e82a7a","Verbs":"#2ab8e8","Family & Home":"#e86a2a","City & Transport":"#5a8ae8","My Words":"#16a085"};
+const BUILTIN_COLORS={"Everyday":"#d4a07a","Months & Days":"#96b88a","Numbers":"#c8a882","Classroom":"#d4bc72","Adjectives":"#d49a8a","Verbs":"#88bbc8","Family & Home":"#d4b08a","City & Transport":"#a0aec8","My Words":"#2aae6e"};
 const CUSTOM_COLORS=["#2a85e8","#e8852a","#16a085","#9b2ae8","#e82a7a","#2ab8e8","#e86a2a","#5a8ae8","#2aae6e","#e85a2a"];
 const getColor=(t,customTopics)=>{
   if(BUILTIN_COLORS[t])return BUILTIN_COLORS[t];
