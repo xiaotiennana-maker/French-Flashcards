@@ -167,12 +167,9 @@ const BASE=[
   {fr:"la poste",pr:"lah POST",en:"the post office",t:"City & Transport"},
 ];
 
-// localStorage helpers
 const lsGet=(k,d)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}};
 const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
-
 const shuf=a=>{const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]]}return b};
-
 const mkDeck=(topic,skip,known,cards)=>{
   let f=topic==="All"?[...cards]:cards.filter(c=>c.t===topic);
   if(skip)f=f.filter(c=>!known.has(c.fr));
@@ -180,11 +177,7 @@ const mkDeck=(topic,skip,known,cards)=>{
 };
 
 function App(){
-  // Load saved custom words and merge with BASE
-  const [cards,setCards]=useState(()=>{
-    const w=lsGet("fr-words",[]);
-    return w.length?[...BASE,...w]:[...BASE];
-  });
+  const [cards,setCards]=useState(()=>{const w=lsGet("fr-words",[]);return w.length?[...BASE,...w]:[...BASE]});
   const [customTopics,setCustomTopics]=useState(()=>lsGet("fr-topics",[]));
   const [known,setKnown]=useState(()=>new Set(lsGet("fr-known",[])));
   const [review,setReview]=useState(()=>new Set(lsGet("fr-review",[])));
@@ -195,34 +188,21 @@ function App(){
   const [flip,setFlip]=useState(false);
   const [spk,setSpk]=useState(false);
   const [panel,setPanel]=useState(null);
-
-  // Add word form
   const [nFr,setNFr]=useState("");
   const [nPr,setNPr]=useState("");
   const [nEn,setNEn]=useState("");
   const [nT,setNT]=useState("My Words");
   const [addMsg,setAddMsg]=useState("");
-
-  // Sheet
   const [sUrl,setSUrl]=useState(()=>localStorage.getItem("fr-sheet-url")||"");
   const [sSt,setSSt]=useState("idle");
   const [sErr,setSErr]=useState("");
-
-  // Topic manager
   const [editT,setEditT]=useState(null);
   const [editN,setEditN]=useState("");
   const [newTN,setNewTN]=useState("");
 
   const color=getColor(topic);
-
-  // All unique topics from cards + custom
-  const getTopicsFromCards=(cardList)=>[...new Set(cardList.map(c=>c.t))];
-
-  const allTopics=["All",...Object.keys(COLORS).filter(k=>k!=="All"),...customTopics.filter(t=>!COLORS[t])];
-  // Only show topic pill if it has cards
-  const visibleTopics=allTopics.filter(t=>t==="All"||cards.some(c=>c.t===t));
-  // All topics for manage panel
-  const manageTopics=[...new Set([...Object.keys(COLORS).filter(k=>k!=="All"),...customTopics,...getTopicsFromCards(cards)])];
+  const allTopicNames=[...new Set([...Object.keys(COLORS).filter(k=>k!=="All"),...customTopics,...cards.map(c=>c.t)])].filter(t=>t!=="All");
+  const visibleTopics=["All",...allTopicNames.filter(t=>cards.some(c=>c.t===t))];
 
   const card=deck[idx]||{fr:"",pr:"",en:"",t:""};
   const isK=known.has(card.fr);
@@ -231,19 +211,17 @@ function App(){
 
   const updateDeck=(t,sk,kn,cs)=>{
     const d=mkDeck(t,sk,kn,cs);
-    setDeck(d.length?d:mkDeck("All",sk,kn,cs));
-    if(!d.length)setTopic("All");
+    if(d.length){setDeck(d);}else{setDeck(mkDeck("All",sk,kn,cs));setTopic("All");}
     setIdx(0);setFlip(false);
   };
 
   const chgTopic=(t)=>{
     const d=mkDeck(t,skip,known,cards);
-    if(d.length===0){alert(`"${t}" has no cards yet!`);return;}
+    if(!d.length){alert(`"${t}" has no cards yet!`);return;}
     setTopic(t);setDeck(d);setIdx(0);setFlip(false);
   };
 
   const togSkip=()=>{const n=!skip;setSkip(n);updateDeck(topic,n,known,cards)};
-
   const go=(d)=>{setFlip(false);setIdx(i=>(i+d+deck.length)%deck.length)};
 
   const mark=(type)=>{
@@ -253,40 +231,12 @@ function App(){
   };
 
   const save=()=>{
-    const data={
-      known:[...known],
-      review:[...review],
-      words:lsGet("fr-words",[]),
-      topics:lsGet("fr-topics",[]),
-      sheetUrl:sUrl,
-      savedAt:new Date().toISOString()
-    };
     lsSet("fr-known",[...known]);
     lsSet("fr-review",[...review]);
-    const code=btoa(JSON.stringify(data));
-    // Show save code
-    const box=document.createElement("textarea");
-    box.value=code;
-    box.style.cssText="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:90%;max-width:400px;height:120px;padding:10px;border-radius:12px;border:1px solid #ddd;font-size:11px;z-index:9999;background:#fff;box-shadow:0 4px 20px rgba(0,0,0,.2)";
-    const overlay=document.createElement("div");
-    overlay.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9998";
-    const label=document.createElement("div");
-    label.innerText="📋 Your save code — copy this and paste it into your Google Sheet or another device:";
-    label.style.cssText="position:fixed;top:calc(50% - 100px);left:50%;transform:translateX(-50%);width:90%;max-width:400px;background:#fff;padding:12px;border-radius:12px 12px 0 0;font-size:13px;font-weight:500;z-index:9999;line-height:1.5";
-    const closeBtn=document.createElement("button");
-    closeBtn.innerText="✕ Close";
-    closeBtn.style.cssText="position:fixed;top:calc(50% + 40px);left:50%;transform:translateX(-50%);padding:10px 30px;border-radius:999px;border:none;background:#2a85e8;color:#fff;font-size:14px;font-weight:500;z-index:9999;cursor:pointer";
-    const copyBtn=document.createElement("button");
-    copyBtn.innerText="📋 Copy Code";
-    copyBtn.style.cssText="position:fixed;top:calc(50% + 40px);left:calc(50% - 80px);transform:translateX(-50%);padding:10px 20px;border-radius:999px;border:none;background:#2aae6e;color:#fff;font-size:14px;font-weight:500;z-index:9999;cursor:pointer";
-    const cleanup=()=>{overlay.remove();box.remove();label.remove();closeBtn.remove();copyBtn.remove()};
-    overlay.onclick=cleanup;
-    closeBtn.onclick=cleanup;
-    copyBtn.onclick=()=>{navigator.clipboard.writeText(code).then(()=>{copyBtn.innerText="✅ Copied!";setTimeout(()=>copyBtn.innerText="📋 Copy Code",2000)})};
-    document.body.append(overlay,label,box,copyBtn,closeBtn);
-    box.select();
+    lsSet("fr-topics",customTopics);
+    if(sUrl)localStorage.setItem("fr-sheet-url",sUrl);
+    alert("✅ Saved!");
   };
-  const reset=()=>{if(!confirm("Reset all progress?"))return;setKnown(new Set());setReview(new Set());lsSet("fr-known",[]);lsSet("fr-review",[])};
 
   const speak=useCallback(()=>{
     if(!window.speechSynthesis)return;
@@ -298,14 +248,16 @@ function App(){
   },[card]);
 
   const addWord=()=>{
-    if(!nFr.trim()||!nEn.trim()){setAddMsg("⚠️ French & English required!");return}
+    if(!nFr.trim()||!nEn.trim()){setAddMsg("⚠️ French & English required!");return;}
     const w={fr:nFr.trim(),pr:nPr.trim(),en:nEn.trim(),t:nT||"My Words"};
     const updated=[...cards,w];
     setCards(updated);
     updateDeck(topic,skip,known,updated);
-    const saved=lsGet("fr-words",[]);lsSet("fr-words",[...saved,w]);
+    const saved=lsGet("fr-words",[]);
+    lsSet("fr-words",[...saved,w]);
     setNFr("");setNPr("");setNEn("");
-    setAddMsg("✅ Added!");setTimeout(()=>setAddMsg(""),2000);
+    setAddMsg("✅ Added!");
+    setTimeout(()=>setAddMsg(""),2000);
   };
 
   const fetchSheet=async(url)=>{
@@ -329,10 +281,8 @@ function App(){
         return{fr:c[0]||"",pr:c[1]||"",en:c[2]||"",t:c[3]||"My Words"};
       }).filter(c=>c.fr&&c.en);
       if(!nc.length)throw new Error("No cards found. Columns: French, Pronunciation, English, Topic");
-      // Merge: keep BASE + existing custom words + new sheet words
       const existingCustom=lsGet("fr-words",[]);
       const combined=[...BASE,...existingCustom,...nc];
-      // Add new topics from sheet to customTopics
       const sheetTopics=[...new Set(nc.map(c=>c.t))].filter(t=>!COLORS[t]);
       const mergedTopics=[...new Set([...customTopics,...sheetTopics])];
       setCustomTopics(mergedTopics);
@@ -341,56 +291,31 @@ function App(){
       updateDeck(topic,skip,known,combined);
       setSSt("success");
       localStorage.setItem("fr-sheet-url",url);
-    }catch(e){setSSt("error");setSErr(e.message)}
+    }catch(e){setSSt("error");setSErr(e.message);}
   };
 
-  const saveCustomTopics=(t)=>{setCustomTopics(t);lsSet("fr-topics",t)};
-
-  const addTopic=()=>{
-    const n=newTN.trim();
-    if(!n||manageTopics.includes(n))return;
-    saveCustomTopics([...customTopics,n]);
-    setNewTN("");
-  };
-
+  const saveCT=(t)=>{setCustomTopics(t);lsSet("fr-topics",t)};
+  const addTopic=()=>{const n=newTN.trim();if(!n||allTopicNames.includes(n))return;saveCT([...customTopics,n]);setNewTN("")};
   const renameTopic=(old,nw)=>{
-    const tr=nw.trim();if(!tr||tr===old){setEditT(null);return}
+    const tr=nw.trim();if(!tr||tr===old){setEditT(null);return;}
     const uc=cards.map(c=>c.t===old?{...c,t:tr}:c);
-    setCards(uc);
-    updateDeck(topic===old?tr:topic,skip,known,uc);
-    saveCustomTopics(customTopics.map(t=>t===old?tr:t));
+    setCards(uc);updateDeck(topic===old?tr:topic,skip,known,uc);
+    saveCT(customTopics.map(t=>t===old?tr:t));
     if(topic===old)setTopic(tr);
     setEditT(null);
   };
-
   const deleteTopic=(name)=>{
     if(!confirm(`Delete "${name}"? Cards move to My Words.`))return;
     const uc=cards.map(c=>c.t===name?{...c,t:"My Words"}:c);
     setCards(uc);
-    const newTopic=topic===name?"All":topic;
-    setTopic(newTopic);
-    updateDeck(newTopic,skip,known,uc);
-    saveCustomTopics(customTopics.filter(t=>t!==name));
+    const nt=topic===name?"All":topic;
+    setTopic(nt);updateDeck(nt,skip,known,uc);
+    saveCT(customTopics.filter(t=>t!==name));
   };
 
-  const importData=()=>{
-    const code=prompt("📋 Paste your save code here:");
-    if(!code)return;
-    try{
-      const data=JSON.parse(atob(code.trim()));
-      if(data.known)setKnown(new Set(data.known));
-      if(data.review)setReview(new Set(data.review));
-      if(data.words){lsSet("fr-words",data.words);const updated=[...BASE,...data.words];setCards(updated);updateDeck(topic,skip,known,updated);}
-      if(data.topics){setCustomTopics(data.topics);lsSet("fr-topics",data.topics);}
-      if(data.sheetUrl){setSUrl(data.sheetUrl);localStorage.setItem("fr-sheet-url",data.sheetUrl);}
-      lsSet("fr-known",data.known||[]);
-      lsSet("fr-review",data.review||[]);
-      alert("✅ Data imported successfully!");
-    }catch(e){alert("⚠️ Invalid code. Please paste the correct save code.");}
-  };
+  const togPanel=(p)=>setPanel(prev=>prev===p?null:p);
 
   return h("div",null,
-    // Top bar
     h("div",{className:"topbar"},
       h("div",{className:"stat"},
         h("span",{style:{color:"#2aae6e",fontWeight:500}},known.size+" ✓"),
@@ -401,23 +326,18 @@ function App(){
         h("button",{className:"btn",style:panel==="add"?{background:color,border:"none",color:"#fff"}:{},onClick:()=>togPanel("add")},"➕ Add Word"),
         h("button",{className:"btn",style:sSt==="success"?{background:"#e8f9f0",color:"#16a085"}:{},onClick:()=>togPanel("sheet")},"📊 "+(sSt==="success"?"Connected":"Sheet")),
         h("button",{className:"btn",style:{background:color,border:"none",color:"#fff"},onClick:save},"💾 Save"),
-        h("button",{className:"btn",onClick:importData},"📥 Import"),
-
       )
     ),
 
-    // Add Word panel
     panel==="add"&&h("div",{className:"panel"},
-      h("div",{className:"panel-head"},"➕ Add New Word",
-        h("button",{className:"close-btn",onClick:()=>setPanel(null)},"✕ Close")
-      ),
+      h("div",{className:"panel-head"},"➕ Add New Word",h("button",{className:"close-btn",onClick:()=>setPanel(null)},"✕ Close")),
       h("div",{className:"field"},h("div",{className:"label"},"🇫🇷 French *"),h("input",{value:nFr,onChange:ev=>setNFr(ev.target.value),placeholder:"e.g. la mer"})),
       h("div",{className:"field"},h("div",{className:"label"},"🔊 Pronunciation (optional)"),h("input",{value:nPr,onChange:ev=>setNPr(ev.target.value),placeholder:"e.g. lah MEHR"})),
       h("div",{className:"field"},h("div",{className:"label"},"🇬🇧 English *"),h("input",{value:nEn,onChange:ev=>setNEn(ev.target.value),placeholder:"e.g. the sea"})),
       h("div",{className:"field"},
         h("div",{className:"label"},"📁 Topic"),
         h("select",{value:nT,onChange:ev=>setNT(ev.target.value)},
-          visibleTopics.filter(t=>t!=="All").map(t=>h("option",{key:t,value:t},t)),
+          allTopicNames.map(t=>h("option",{key:t,value:t},t)),
           h("option",{value:"My Words"},"My Words")
         )
       ),
@@ -425,109 +345,5 @@ function App(){
       addMsg&&h("div",{style:{marginTop:8,fontSize:13,textAlign:"center",color:addMsg.includes("✅")?"#2aae6e":"#e85a2a"}},addMsg)
     ),
 
-    // Sheet panel
     panel==="sheet"&&h("div",{className:"panel"},
-      h("div",{className:"panel-head"},"📊 Connect Google Sheet",
-        h("button",{className:"close-btn",onClick:()=>setPanel(null)},"✕ Close")
-      ),
-      h("p",{style:{fontSize:12,color:"#777",lineHeight:1.7,marginBottom:10}},
-        "1. Columns: French | Pronunciation | English | Topic",h("br"),
-        "2. File → Share → Publish to web → CSV → Publish",h("br"),
-        "3. Paste the published link below"
-      ),
-      h("div",{style:{display:"flex",gap:8,marginBottom:8}},
-        h("input",{value:sUrl,onChange:ev=>setSUrl(ev.target.value),placeholder:"https://docs.google.com/spreadsheets/d/...",style:{flex:1}}),
-        h("button",{onClick:()=>fetchSheet(sUrl),disabled:!sUrl||sSt==="loading",style:{padding:"7px 14px",borderRadius:8,border:"none",background:color,color:"#fff",fontWeight:500,whiteSpace:"nowrap",opacity:!sUrl||sSt==="loading"?0.5:1}},sSt==="loading"?"...":"Load")
-      ),
-      sSt==="success"&&h("div",{style:{fontSize:12,color:"#16a085"}},"✅ Sheet loaded!"),
-      sSt==="error"&&h("div",{style:{fontSize:12,color:"#e85a2a"}},"⚠️ "+sErr)
-    ),
-
-    // Topic header
-    h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}},
-      h("div",{style:{fontSize:12,color:"#888"}},"topic"),
-      h("button",{className:"btn",style:panel==="topics"?{background:color,border:"none",color:"#fff"}:{},onClick:()=>togPanel("topics")},"⚙️ Manage")
-    ),
-
-    // Topic pills
-    h("div",{className:"topic-pills"},
-      visibleTopics.map(t=>h("button",{key:t,className:"tp"+(topic===t?" on":""),style:topic===t?{background:getColor(t)}:{},onClick:()=>chgTopic(t)},t))
-    ),
-
-    // Topic manager panel
-    panel==="topics"&&h("div",{className:"panel"},
-      h("div",{className:"panel-head"},"⚙️ Manage Topics",
-        h("button",{className:"close-btn",onClick:()=>setPanel(null)},"✕ Close")
-      ),
-      manageTopics.map(t=>h("div",{key:t,className:"trow"},
-        editT===t
-          ?h(React.Fragment,null,
-              h("input",{value:editN,onChange:ev=>setEditN(ev.target.value),onKeyDown:ev=>ev.key==="Enter"&&renameTopic(t,editN),autoFocus:true,style:{flex:1}}),
-              h("button",{onClick:()=>renameTopic(t,editN),style:{padding:"4px 10px",borderRadius:6,border:"none",background:color,color:"#fff"}},"✓"),
-              h("button",{onClick:()=>setEditT(null),style:{padding:"4px 10px",borderRadius:6,border:"1px solid #ddd",background:"#fff",color:"#666"}},"✕")
-            )
-          :h(React.Fragment,null,
-              h("span",null,t),
-              h("button",{className:"ib",onClick:()=>{setEditT(t);setEditN(t)}},"✏️"),
-              h("button",{className:"ib",style:{color:"#e85a2a"},onClick:()=>deleteTopic(t)},"🗑️")
-            )
-      )),
-      h("div",{style:{display:"flex",gap:8,marginTop:10}},
-        h("input",{value:newTN,onChange:ev=>setNewTN(ev.target.value),onKeyDown:ev=>ev.key==="Enter"&&addTopic(),placeholder:"New topic name...",style:{flex:1}}),
-        h("button",{onClick:addTopic,disabled:!newTN.trim(),style:{padding:"7px 14px",borderRadius:8,border:"none",background:color,color:"#fff",opacity:newTN.trim()?1:0.5}},"➕ Add")
-      )
-    ),
-
-    // Skip toggle
-    h("div",{className:"skip",onClick:togSkip},
-      h("div",{className:"tog"+(skip?" on":""),style:skip?{background:color}:{}},h("div",{className:"knob"})),
-      h("span",{style:{fontSize:13,color:"#666"}},
-        "Skip words I know",
-        skip&&h("span",{style:{color,fontWeight:500,marginLeft:6}},"("+deck.length+" left)")
-      )
-    ),
-
-    // Counter
-    h("div",{className:"ctr"},
-      h("span",null,"Card "+(idx+1)+" of "+deck.length),
-      h("div",{className:"badges"},h("span",{className:"bk"},known.size+" ✓"),h("span",{className:"br"},review.size+" ↺"))
-    ),
-
-    // Progress
-    h("div",{className:"prog"},h("div",{className:"progfill",style:{width:prog+"%",background:color}})),
-
-    // Card
-    deck.length>0
-      ?h("div",{className:"card",style:{border:`1px solid ${isK?"#2aae6e":isR?"#e8a82a":"#eee"}`},onClick:()=>setFlip(f=>!f)},
-          h("span",{className:"tag",style:{background:getColor(card.t)+"22",color:getColor(card.t)}},card.t),
-          h("span",{className:"hint"},flip?"meaning":"tap to reveal"),
-          !flip
-            ?h(React.Fragment,null,h("div",{className:"fr"},card.fr),h("div",{className:"pr"},card.pr))
-            :h(React.Fragment,null,h("div",{className:"en-sm"},card.fr),h("div",{className:"en"},card.en))
-        )
-      :h("div",{className:"card"},h("div",{className:"empty"},"No cards in this topic yet!")),
-
-    // Speaker
-    h("div",{className:"speak-row"},
-      h("button",{className:"speak"+(spk?" on":""),onClick:speak},"🔊")
-    ),
-
-    // Mark buttons
-    h("div",{className:"marks"},
-      h("button",{className:"mk"+(isK?" k":""),onClick:()=>mark(isK?null:"k")},"✓"),
-      h("button",{className:"mk"+(isR?" r":""),onClick:()=>mark(isR?null:"r")},"↺")
-    ),
-
-    // Nav
-    h("div",{className:"navs"},
-      h("button",{className:"nv",onClick:()=>go(-1)},"←"),
-      h("button",{className:"shuf",onClick:()=>{setDeck(d=>shuf(d));setIdx(0);setFlip(false)}},"⇄"),
-      h("button",{className:"nv",onClick:()=>go(1)},"→")
-    )
-  );
-}
-
-ReactDOM.render(h(App),document.getElementById("app"));
-</script>
-</body>
-</html>
+      h("div",{className:"panel-head"},"📊 Connect Google Sheet",h("button",{className:
