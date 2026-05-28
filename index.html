@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<meta charset="UTF-8"/>
 <link rel="manifest" href="manifest.json"/>
 <link rel="apple-touch-icon" href="icon.png"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
@@ -415,11 +416,29 @@ function App(){
   const AddWord=()=>h("div",{className:"box"},
     h("div",{className:"box-title"},"➕ Add a word"),
     h("div",{className:"qa-row"},
-      h("input",{className:"qa-input",style:{fontWeight:500},placeholder:"🇫🇷 French *",value:qaFr,onChange:e=>setQaFr(e.target.value),onKeyDown:e=>{if(e.key==="Enter")addWord();}}),
-      h("input",{className:"qa-input",placeholder:"🔊 Pronunciation",value:qaPr,onChange:e=>setQaPr(e.target.value),onKeyDown:e=>{if(e.key==="Enter")addWord();}})
+      h("input",{
+        className:"qa-input",style:{fontWeight:500},placeholder:"🇫🇷 French *",
+        value:qaFr,
+        onChange:e=>setQaFr(e.target.value),
+        onFocus:e=>setTimeout(()=>e.target.scrollIntoView({behavior:"smooth",block:"center"}),300),
+        onKeyDown:e=>{if(e.key==="Enter")addWord();}
+      }),
+      h("input",{
+        className:"qa-input",placeholder:"🔊 Pronunciation",
+        value:qaPr,
+        onChange:e=>setQaPr(e.target.value),
+        onFocus:e=>setTimeout(()=>e.target.scrollIntoView({behavior:"smooth",block:"center"}),300),
+        onKeyDown:e=>{if(e.key==="Enter")addWord();}
+      })
     ),
     h("div",{className:"qa-row"},
-      h("input",{className:"qa-input",placeholder:"🇬🇧 English *",value:qaEn,onChange:e=>setQaEn(e.target.value),onKeyDown:e=>{if(e.key==="Enter")addWord();}}),
+      h("input",{
+        className:"qa-input",placeholder:"🇬🇧 English *",
+        value:qaEn,
+        onChange:e=>setQaEn(e.target.value),
+        onFocus:e=>setTimeout(()=>e.target.scrollIntoView({behavior:"smooth",block:"center"}),300),
+        onKeyDown:e=>{if(e.key==="Enter")addWord();}
+      }),
       h("select",{className:"qa-select",value:qaT,onChange:e=>setQaT(e.target.value)},ddTopics.map(t=>h("option",{key:t,value:t},t))),
       h("button",{className:"qa-add-btn",onClick:addWord},"➕")
     ),
