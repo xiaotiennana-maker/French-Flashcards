@@ -1,11 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<meta charset="UTF-8"/>
 <link rel="manifest" href="manifest.json"/>
-<link rel="apple-touch-icon" href="icon.png"/>
-<meta name="apple-mobile-web-app-capable" content="yes"/>
-<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
-<meta name="apple-mobile-web-app-title" content="French Cards"/><link rel="manifest" href="manifest.json"/>
 <link rel="apple-touch-icon" href="icon.png"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
@@ -213,7 +210,11 @@ const BASE=[
 ];
 
 const ls=(k,d)=>{try{const v=localStorage.getItem(k);return v!=null?JSON.parse(v):d}catch{return d}};
-const lsSave=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}};
+const lsSave=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));localStorage.setItem(k+"_bak",JSON.stringify(v))}catch{}};
+const lsGet=(k,d)=>{try{const v=localStorage.getItem(k)||localStorage.getItem(k+"_bak");return v!=null?JSON.parse(v):d}catch{return d}};
+// always get fresh SR directly from localStorage
+const getSRFresh=fr=>{const m=lsGet("fr2-sr",{});return m[fr]||initSR()};
+const saveSR=(fr,sr)=>{const m=lsGet("fr2-sr",{});m[fr]=sr;lsSave("fr2-sr",m);return m};
 const shuf=a=>{const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]]}return b};
 const today=()=>Math.floor(Date.now()/86400000);
 const initSR=()=>({ease:2.5,interval:0,rep:0,due:today()});
@@ -262,7 +263,7 @@ function App(){
   const [customWords,setCustomWords]=useState(()=>ls("fr2-words",[]));
   const [customTopics,setCustomTopics]=useState(()=>ls("fr2-custom-topics",[]));
   const [hiddenBuiltIn,setHiddenBuiltIn]=useState(()=>ls("fr2-hidden-builtin",[]));
-  const [srMap,setSrMap]=useState(()=>ls("fr2-sr",{}));
+  const [srTick,setSrTick]=useState(0); // just triggers re-render
   const [topic,setTopic]=useState("All");
   const [mode,setMode]=useState("flash");
   const [deck,setDeck]=useState([]);
@@ -280,21 +281,18 @@ function App(){
   const [listenRevealed,setListenRevealed]=useState(false);
   const [listenChoices,setListenChoices]=useState([]);
 
-  const gc=t=>getColor(t,customTopics);
-  const allCards=[...BASE,...customWords].map(c=>hiddenBuiltIn.includes(c.t)&&BUILTIN_COLORS[c.t]?{...c,t:"My Words"}:c);
-  const topicPills=["All",...Object.keys(BUILTIN_COLORS).filter(t=>!hiddenBuiltIn.includes(t)&&allCards.some(c=>c.t===t)),...customTopics.filter(t=>allCards.some(c=>c.t===t))];
-  const dropdownTopics=[...Object.keys(BUILTIN_COLORS).filter(t=>!hiddenBuiltIn.includes(t)),...customTopics];
-  const getSR=fr=>srMap[fr]||initSR();
-  const dueCount=allCards.filter(c=>getSR(c.fr).due<=today()).length;
+  // srMap is now just a trigger for re-renders — real data always in localStorage
+  const [srTick,setSrTick]=useState(0);
+  const getSR=fr=>getSRFresh(fr);
+  const dueCount=allCards.filter(c=>getSRFresh(c.fr).due<=today()).length;
 
-  const buildDeck=(t,ac,sm)=>{
+  const buildDeck=(t,ac)=>{
     let pool=t==="All"?[...ac]:ac.filter(c=>c.t===t);
-    const getSRl=fr=>sm[fr]||initSR();
-    return[...shuf(pool.filter(c=>getSRl(c.fr).due<=today())),...shuf(pool.filter(c=>getSRl(c.fr).due>today()))];
+    return[...shuf(pool.filter(c=>getSRFresh(c.fr).due<=today())),...shuf(pool.filter(c=>getSRFresh(c.fr).due>today()))];
   };
 
   useEffect(()=>{
-    setDeck(buildDeck(topic,allCards,srMap));
+    setDeck(buildDeck(topic,allCards));
     setIdx(0);setFlipped(false);setChosen(null);setListenRevealed(false);
   },[topic,customWords,hiddenBuiltIn,customTopics]);
 
@@ -308,9 +306,8 @@ function App(){
   const topicColor=gc(topic);
   const total=deck.length;
   const prog=total?Math.round(idx/total*100):0;
-  const isDue=card&&getSR(card.fr).due<=today();
+  const isDue=card&&getSRFresh(card.fr).due<=today();
 
-  // remove correct card, send wrong to end
   const advance=(correct)=>{
     setFlipped(false);setChosen(null);setListenRevealed(false);
     if(correct){
@@ -326,11 +323,9 @@ function App(){
 
   const rate=q=>{
     if(!card)return;
-    // always read fresh from localStorage to avoid stale state
-    const freshMap=ls("fr2-sr",{});
-    const newMap={...freshMap,[card.fr]:applySM2(getSR(card.fr),q)};
-    setSrMap(newMap);
-    lsSave("fr2-sr",newMap);
+    const sr=getSRFresh(card.fr);
+    saveSR(card.fr,applySM2(sr,q));
+    setSrTick(t=>t+1);
     advance(q>=2);
   };
 
