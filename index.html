@@ -185,14 +185,14 @@ const BASE=[
   {fr:"le professeur",pr:"leh pro-feh-SUR",en:"the teacher",t:"Classroom"},
   {fr:"l'école",pr:"lay-KOL",en:"the school",t:"Classroom"},
   {fr:"le livre",pr:"leh LEE-vreh",en:"the book",t:"Classroom"},
-  {fr:"manger",pr:"mahn-ZHEH",en:"to eat",t:"Verbs"},
-  {fr:"parler",pr:"par-LEH",en:"to speak",t:"Verbs"},
-  {fr:"aller",pr:"ah-LEH",en:"to go",t:"Verbs"},
-  {fr:"avoir",pr:"ah-VWAHR",en:"to have",t:"Verbs"},
-  {fr:"être",pr:"EH-treh",en:"to be",t:"Verbs"},
-  {fr:"aimer",pr:"ay-MAY",en:"to like / love",t:"Verbs"},
-  {fr:"écouter",pr:"ay-koo-TAY",en:"to listen",t:"Verbs"},
-  {fr:"lire",pr:"LEER",en:"to read",t:"Verbs"},
+  {fr:"manger",pr:"mahn-ZHEH",en:"to eat",t:"Verbs",conj:"je mange · tu manges · il mange · nous mangeons · vous mangez · ils mangent"},
+  {fr:"parler",pr:"par-LEH",en:"to speak",t:"Verbs",conj:"je parle · tu parles · il parle · nous parlons · vous parlez · ils parlent"},
+  {fr:"aller",pr:"ah-LEH",en:"to go",t:"Verbs",conj:"je vais · tu vas · il va · nous allons · vous allez · ils vont"},
+  {fr:"avoir",pr:"ah-VWAHR",en:"to have",t:"Verbs",conj:"j'ai · tu as · il a · nous avons · vous avez · ils ont"},
+  {fr:"être",pr:"EH-treh",en:"to be",t:"Verbs",conj:"je suis · tu es · il est · nous sommes · vous êtes · ils sont"},
+  {fr:"aimer",pr:"ay-MAY",en:"to like / love",t:"Verbs",conj:"j'aime · tu aimes · il aime · nous aimons · vous aimez · ils aiment"},
+  {fr:"écouter",pr:"ay-koo-TAY",en:"to listen",t:"Verbs",conj:"j'écoute · tu écoutes · il écoute · nous écoutons · vous écoutez · ils écoutent"},
+  {fr:"lire",pr:"LEER",en:"to read",t:"Verbs",conj:"je lis · tu lis · il lit · nous lisons · vous lisez · ils lisent"},
   {fr:"la famille",pr:"lah fah-MEE",en:"the family",t:"Family & Home"},
   {fr:"la mère",pr:"lah MEHR",en:"the mother",t:"Family & Home"},
   {fr:"le père",pr:"leh PEHR",en:"the father",t:"Family & Home"},
@@ -508,10 +508,22 @@ function App(){
           flipped&&h(Fragment,null,
             h("div",{className:"en-small"},card.fr),
             h("div",{style:{fontSize:11,color:"#bbb",marginBottom:4}},"Explanation"),
-            h("div",{className:"en-text"},card.en)
+            h("div",{className:"en-text"},card.en),
+            card.conj&&h("div",{style:{marginTop:14,paddingTop:14,borderTop:"1px solid #eee",width:"100%"}},
+              h("div",{style:{fontSize:11,color:"#bbb",marginBottom:6,textAlign:"center"}},"Present tense"),
+              h("div",{style:{fontSize:14,color:"#5a8a9a",lineHeight:1.8,textAlign:"center"}},card.conj)
+            )
           )
         ),
         h("div",{className:"speak-row"},h("button",{className:"speak-btn",onClick:e=>{e.stopPropagation();speak(card.fr);}},"🔊")),
+        card.t==="Verbs"&&h("div",{style:{display:"flex",justifyContent:"center",marginBottom:12}},
+          h("a",{
+            href:"https://conjugator.reverso.net/conjugation-french-verb-"+encodeURIComponent(card.fr.replace(/^(se |s')/,""))+".html",
+            target:"_blank",rel:"noopener",
+            onClick:e=>e.stopPropagation(),
+            style:{fontSize:13,fontWeight:600,padding:"7px 18px",borderRadius:99,border:"1.5px solid #88bbc8",background:"#fff",color:"#5a8a9a",textDecoration:"none"}
+          },"📖 Conjugate")
+        ),
         flipped
           ?h("div",{className:"sm2-row"},
             [["Again","btn-again",0],["Hard","btn-hard",1],["Good","btn-good",2],["Easy","btn-easy",3]].map(([l,cls,q])=>
