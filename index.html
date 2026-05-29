@@ -227,6 +227,23 @@ const shuf=a=>{const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(M
 const speak=t=>{if(!window.speechSynthesis)return;window.speechSynthesis.cancel();setTimeout(()=>{const u=new SpeechSynthesisUtterance(t);u.lang="fr-FR";u.rate=.85;window.speechSynthesis.speak(u);},50);};
 
 // Separate component so typing doesn't re-render the whole app
+function EditWordForm({word, topics, onSave, onCancel}){
+  const [fr,setFr]=useState(word.fr);
+  const [pr,setPr]=useState(word.pr||"");
+  const [en,setEn]=useState(word.en);
+  const [t,setT]=useState(word.t||"My Words");
+  return h("div",{style:{background:"#f0f8ff",border:"1.5px solid #2ab8c8",borderRadius:12,padding:10,marginBottom:6}},
+    h("input",{className:"field",style:{marginBottom:6},placeholder:"🇫🇷 French",value:fr,onChange:e=>setFr(e.target.value)}),
+    h("input",{className:"field",style:{marginBottom:6},placeholder:"🔊 Pronunciation",value:pr,onChange:e=>setPr(e.target.value)}),
+    h("input",{className:"field",style:{marginBottom:6},placeholder:"💡 Explanation",value:en,onChange:e=>setEn(e.target.value)}),
+    h("div",{className:"qa-row"},
+      h("select",{className:"qa-select",style:{flex:2},value:t,onChange:e=>setT(e.target.value)},topics.map(tp=>h("option",{key:tp,value:tp},tp))),
+      h("button",{className:"save-btn",style:{flex:1,padding:"8px"},onClick:()=>{if(fr.trim()&&en.trim())onSave({fr:fr.trim(),pr:pr.trim(),en:en.trim(),t});}},"✓ Save"),
+      h("button",{className:"cancel-btn",style:{flex:1,padding:"8px"},onClick:onCancel},"✕")
+    )
+  );
+}
+
 function AddWordForm({topics, onAdd}){
   const [fr,setFr]=useState("");
   const [pr,setPr]=useState("");
@@ -243,7 +260,7 @@ function AddWordForm({topics, onAdd}){
     h("div",{className:"box-title"},"➕ Add a word"),
     h("input",{className:"field",placeholder:"🇫🇷 French *",value:fr,onChange:e=>setFr(e.target.value),onKeyDown:e=>{if(e.key==="Enter")submit();}}),
     h("input",{className:"field",placeholder:"🔊 Pronunciation (optional)",value:pr,onChange:e=>setPr(e.target.value),onKeyDown:e=>{if(e.key==="Enter")submit();}}),
-    h("input",{className:"field",placeholder:"🇬🇧 English *",value:en,onChange:e=>setEn(e.target.value),onKeyDown:e=>{if(e.key==="Enter")submit();}}),
+    h("input",{className:"field",placeholder:"💡 Explanation *",value:en,onChange:e=>setEn(e.target.value),onKeyDown:e=>{if(e.key==="Enter")submit();}}),
     h("div",{className:"qa-row"},
       h("select",{className:"qa-select",value:t,onChange:e=>setT(e.target.value)},topics.map(tp=>h("option",{key:tp,value:tp},tp))),
       h("button",{className:"qa-add-btn",onClick:submit},"➕ Add")
@@ -328,6 +345,7 @@ function App(){
   const [idx,setIdx]=useState(0);
   const [flipped,setFlipped]=useState(false);
   const [showMW,setShowMW]=useState(false);
+  const [editMW,setEditMW]=useState(null); // index of word being edited
   const [choices,setChoices]=useState([]);
   const [lChoices,setLChoices]=useState([]);
   const [chosen,setChosen]=useState(null);
@@ -419,12 +437,19 @@ function App(){
 
   const MyWords=cw.length>0?h("div",{className:"box"},
     h("div",{className:"box-title"},"📝 My Words ("+cw.length+")",h("button",{className:"box-toggle",onClick:()=>setShowMW(s=>!s)},showMW?"Hide":"Show")),
-    showMW&&cw.map((w,i)=>h("div",{key:i,className:"mw-row"},
-      h("span",{className:"mw-fr"},w.fr),
-      h("span",{className:"mw-en"},w.en),
-      h("span",{style:{fontSize:11,color:"#ccc",flex:1}},w.t),
-      h("button",{className:"mw-del",onClick:()=>setCw(p=>p.filter((_,j)=>j!==i))},"🗑")
-    ))
+    showMW&&cw.map((w,i)=>
+      editMW===i
+        ? h(EditWordForm,{key:i,word:w,topics:ddTopics,
+            onSave:updated=>{setCw(p=>p.map((x,j)=>j===i?updated:x));setEditMW(null);},
+            onCancel:()=>setEditMW(null)})
+        : h("div",{key:i,className:"mw-row"},
+            h("span",{className:"mw-fr"},w.fr),
+            h("span",{className:"mw-en"},w.en),
+            h("span",{style:{fontSize:11,color:"#ccc",flex:1}},w.t),
+            h("button",{className:"edit-btn",style:{marginRight:4},onClick:()=>setEditMW(i)},"✏️"),
+            h("button",{className:"mw-del",onClick:()=>{setCw(p=>p.filter((_,j)=>j!==i));if(editMW===i)setEditMW(null);}},"🗑")
+          )
+    )
   ):null;
 
   const TM=h(TopicManager,{ct,setCt,hb,setHb,cw,setCw,topic,setTopic,color});
@@ -482,6 +507,7 @@ function App(){
           ),
           flipped&&h(Fragment,null,
             h("div",{className:"en-small"},card.fr),
+            h("div",{style:{fontSize:11,color:"#bbb",marginBottom:4}},"Explanation"),
             h("div",{className:"en-text"},card.en)
           )
         ),
